@@ -1,0 +1,364 @@
+/* ==========================================================================
+   PALETA DE COLORES (cambiar después)
+   ========================================================================== */
+:root {
+  /* Fondos y superficies */
+  --color-1: #0f172a; /* Fondo principal */
+  --color-2: #1e293b; /* Fondo del contenedor */
+  --color-3: #334155; /* Bordes e inputs */
+  --color-4: #0284c7; /* Color de acento */
+  --color-5: #0369a1; /* Hover del botón */
+  
+  /* Textos y Tonos Claros */
+  --color-6: #f8fafc; /* Texto de títulos y botón */
+  --color-7: #cbd5e1; /* Texto secundario y labels */
+  --color-8: #94a3b8; /* Placeholders y textos de ayuda */
+  --color-9: #e2e8f0; /* Fondo de inputs */
+}
+
+/* ==========================================================================
+   ESTILOS GENERALES
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Si la imagen falla en cargar, se mostrará --color-1 como respaldo */
+.login-body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: var(--color-1); /* Color de respaldo si falla la imagen */
+  background-image: url('https://cdn.discordapp.com/attachments/724028415661047818/1554358911530696734/671ffdc9eb62a6dccdadbb29_airtable-5817700ecf15f463b4e7d4a7cbfb213d-psmkztac.png?ex=6abc990b&is=6abb478b&hm=093bcd235fe1bb4352d6331ce95f9356b6ea87ad7ac56a12d3c163973d176db5&'); /* Cambiar imagen */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ==========================================================================
+   TARJETA CENTRAL DE LOGIN
+   ========================================================================== */
+.login-card {
+  background-color: var(--color-2);
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 30px;
+  border-radius: 12px;
+  border: 1px solid var(--color-3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+/* Logo */
+.login-logo img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 15px;
+  object-fit: cover;
+}
+
+/* Títulos */
+.login-title {
+  color: var(--color-6);
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+.login-subtitle {
+  color: var(--color-8);
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+/* ==========================================================================
+   FORMULARIO E INPUTS
+   ========================================================================== */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  color: var(--color-7);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.input-group input {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-3);
+  background-color: var(--color-1);
+  color: var(--color-6);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.input-group input::placeholder {
+  color: var(--color-8);
+}
+
+.input-group input:focus {
+  border-color: var(--color-4);
+}
+
+/* Enlace */
+.forgot-password {
+  text-align: right;
+  margin-top: -6px;
+}
+
+.forgot-password a {
+  color: var(--color-8);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  color: var(--color-7);
+  text-decoration: underline;
+}
+
+/* Botón Acceder */
+.btn-submit {
+  margin-top: 10px;
+  padding: 12px;
+  background-color: var(--color-4);
+  color: var(--color-6);
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-submit:hover {
+  background-color: var(--color-5);
+}
+
+/* ==========================================================================
+   ESTILOS PARA INDEX.HTML
+   ========================================================================== */
+.index-body {
+  background-color: #ffffff; /* Fondo blanco general */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #111827;
+}
+
+/* Estructura dividida (Menú lateral + Contenido) */
+.index-layout {
+  display: flex;
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   MENÚ LATERAL PLEGABLE (SIDEBAR)
+   -------------------------------------------------------------------------- */
+.sidebar-menu {
+  width: 280px;
+  background-color: #f9fafb; /* Gris muy tenue para diferenciarlo del centro */
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 16px;
+}
+
+.sidebar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Acordeón Principal (Ramos) */
+.accordion-item {
+  margin-bottom: 8px;
+}
+
+.accordion-header {
+  font-weight: 600;
+  padding: 10px 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordion-content {
+  padding-left: 12px;
+  margin-top: 6px;
+}
+
+/* Sub-acordeón (Unidades) */
+.sub-accordion-item {
+  margin-bottom: 6px;
+}
+
+.sub-accordion-header {
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 10px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #4b5563;
+}
+
+.sub-accordion-content {
+  display: flex;
+  flex-direction: column;
+  padding-left: 16px;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+.sub-accordion-content a {
+  font-size: 0.85rem;
+  color: #2563eb;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sub-accordion-content a:hover {
+  background-color: #e0e7ff;
+}
+
+.placeholder-text {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  padding: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   CONTENIDO CENTRAL (GRID DE TARJETAS)
+   -------------------------------------------------------------------------- */
+.main-content {
+  flex: 1;
+  padding: 40px;
+}
+
+.content-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #111827;
+}
+
+/* Grid de los 4 bloques */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  max-width: 1000px;
+}
+
+/* Estilo de los bloques / tarjetas */
+.class-card {
+  background-color: #f3f4f6; /* Bloque de color gris claro */
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 30px 20px;
+  text-align: center;
+  text-decoration: none;
+  color: #111827;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.class-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.class-card p {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Efecto al pasar el mouse por encima de los bloques */
+.class-card:hover {
+  transform: translateY(-4px);
+  border-color: #2563eb;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* Adaptabilidad a pantallas pequeñas */
+@media (max-width: 768px) {
+  .index-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar-menu {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
+
+/* ==========================================================================
+   VIDEOTECA.HTML
+   ========================================================================== */
+.videoteca-body {
+  background-color: #ffffff; /* Fondo blanco */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #111827;
+}
+
+/* Cabecera superior */
+.site-header {
+  width: 100%;
+  padding: 20px 40px;
+  border-bottom: 1px solid #e5e7eb; /* Línea gris muy tenue */
+  background-color: #ffffff;
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Contenedor del video centrado */
+.main-container {
+  flex: 1; /* Centrado verticalmente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.video-wrapper {
+  width: 100%;
+  max-width: 900px; /* Ancho máximo del reproductor */
+  aspect-ratio: 16 / 9; /* Mantiene la proporción horizontal estándar 16:9 */
+  background-color: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Sombra suave */
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

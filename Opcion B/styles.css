@@ -1,0 +1,200 @@
+/* ==========================================================================
+   PALETA DE COLORES
+   ========================================================================== */
+:root {
+  /* Fondos y superficies */
+  --color-1: #0f172a; /* Fondo principal del lado de la imagen */
+  --color-2: #1e293b; /* Fondo del panel lateral derecho */
+  --color-3: #334155; /* Bordes e inputs */
+  --color-4: #0284c7; /* Color de acento */
+  --color-5: #0369a1; /* Hover del botón */
+  
+  /* Textos y Tonos Claros */
+  --color-6: #f8fafc; /* Títulos, textos sobre la foto y botón */
+  --color-7: #cbd5e1; /* Labels y texto secundario */
+  --color-8: #94a3b8; /* Placeholders y enlaces */
+  --color-9: #e2e8f0; /* Tono de resaltado */
+}
+
+/* ==========================================================================
+   ESTILOS GENERALES
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden; /* Evita scrolls innecesarios en pantalla completa */
+}
+
+/* Contenedor dividido en 2 columnas */
+.login-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ==========================================================================
+   LADO IZQUIERDO
+   ========================================================================== */
+.login-hero {
+  flex: 1; /* Ocupa todo el espacio restante (izquierda y centro) */
+  background-color: var(--color-1); /* Color de respaldo si no carga la imagen */
+  background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url('https://cdn.discordapp.com/attachments/724028415661047818/1554358853628334160/673c1141d616bb252b21df24_airtable-e64688cb7c8aa55226ea42c0979bc133-vosv3a5a.png?ex=6abc98fd&is=6abb477d&hm=cfe7a4461cdef3cf18cd5515cbd7bc644a2e32940a12b7f433a364728f5cc010&'); /* Imagen de fondo */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  display: flex;
+  align-items: flex-end;
+  padding: 60px;
+}
+
+.hero-text {
+  color: var(--color-6);
+  max-width: 500px;
+}
+
+.hero-text h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.hero-text p {
+  color: var(--color-7);
+  font-size: 1.1rem;
+}
+
+/* ==========================================================================
+   LADO DERECHO
+   ========================================================================== */
+.login-panel {
+  width: 450px; /* Ancho fijo para el panel lateral de la derecha */
+  min-width: 320px;
+  background-color: var(--color-2);
+  border-left: 1px solid var(--color-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.login-content {
+  width: 100%;
+  max-width: 340px;
+}
+
+/* Logo */
+.login-logo img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  object-fit: cover;
+}
+
+/* Títulos */
+.login-title {
+  color: var(--color-6);
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  color: var(--color-8);
+  font-size: 0.88rem;
+  margin-bottom: 30px;
+}
+
+/* ==========================================================================
+   FORMULARIO E INPUTS
+   ========================================================================== */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  color: var(--color-7);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.input-group input {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-3);
+  background-color: var(--color-1);
+  color: var(--color-6);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.input-group input::placeholder {
+  color: var(--color-8);
+}
+
+.input-group input:focus {
+  border-color: var(--color-4);
+}
+
+/* Enlace Olvidaste Contraseña */
+.forgot-password {
+  text-align: right;
+  margin-top: -4px;
+}
+
+.forgot-password a {
+  color: var(--color-8);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  color: var(--color-7);
+  text-decoration: underline;
+}
+
+/* Botón Acceder */
+.btn-submit {
+  margin-top: 10px;
+  padding: 12px;
+  background-color: var(--color-4);
+  color: var(--color-6);
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-submit:hover {
+  background-color: var(--color-5);
+}
+
+/* ==========================================================================
+   Para celus
+   ========================================================================== */
+@media (max-width: 768px) {
+  .login-hero {
+    display: none; /* En teléfonos oculta la foto para dar prioridad al login */
+  }
+  
+  .login-panel {
+    width: 100vw;
+    border-left: none;
+  }
+}
