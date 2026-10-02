@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Asignatura 1 | Videoteca</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--page: #f5f5f4;
+			--surface: #ffffff;
+			--line: #e5e5e4;
+			--text: #292927;
+			--muted: #777773;
+			--soft: #f0f0ee;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-width: 320px;
+			min-height: 100vh;
+			background: var(--page);
+			color: var(--text);
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 14px;
+		}
+
+		.topbar {
+			height: 64px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 32px;
+			background: var(--surface);
+			border-bottom: 1px solid var(--line);
+		}
+
+		.brand { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+		.brand img { width: 36px; height: 36px; object-fit: contain; }
+		.brand-name { color: var(--text); font-weight: 700; }
+		.brand-role { color: var(--muted); font-weight: 400; }
+		.profile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+		.avatar {
+			width: 32px;
+			height: 32px;
+			display: grid;
+			place-items: center;
+			border: 1px solid var(--line);
+			border-radius: 50%;
+			background: var(--soft);
+			color: var(--text);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.layout { min-height: calc(100vh - 64px); display: flex; }
+		.sidebar {
+			width: 260px;
+			flex: 0 0 260px;
+			padding: 28px 18px;
+			background: var(--surface);
+			border-right: 1px solid var(--line);
+		}
+
+		.sidebar-link {
+			display: block;
+			margin-bottom: 26px;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: #555550;
+			text-decoration: none;
+		}
+
+		.side-label {
+			margin: 0 0 10px;
+			color: var(--muted);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: .06em;
+			text-transform: uppercase;
+		}
+
+		.course-list { list-style: none; margin: 0; padding: 0; }
+		.course-list li { margin-top: 4px; border-radius: 4px; color: #555550; }
+		.course-list a,
+		.course-list .course-name {
+			display: block;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+		}
+		.course-list li[aria-current="page"] a { background: var(--soft); color: var(--text); font-weight: 700; }
+
+		main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 32px 40px 48px; }
+		.breadcrumb { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+		.breadcrumb a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+		.course-cover {
+			width: 100%;
+			aspect-ratio: 3.2 / 1;
+			min-height: 150px;
+			max-height: 270px;
+			margin-bottom: 24px;
+			border-radius: 4px;
+			background: var(--soft);
+			object-fit: cover;
+			object-position: center 42%;
+		}
+		h1 { margin: 0; font-size: 28px; font-weight: 600; }
+		.course-description { margin: 8px 0 30px; color: var(--muted); }
+		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+		h2 { margin: 0; font-size: 17px; font-weight: 600; }
+		.resource-count { color: var(--muted); font-size: 13px; }
+		.resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+		.resource-card { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+		.video-preview { position: relative; aspect-ratio: 16 / 9; background: var(--soft); }
+		.video-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+		.play-mark {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 42px;
+			height: 42px;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, .92);
+			transform: translate(-50%, -50%);
+		}
+		.play-mark::after {
+			position: absolute;
+			top: 12px;
+			left: 17px;
+			width: 0;
+			height: 0;
+			border-top: 9px solid transparent;
+			border-bottom: 9px solid transparent;
+			border-left: 12px solid var(--text);
+			content: "";
+		}
+		.duration {
+			position: absolute;
+			right: 8px;
+			bottom: 8px;
+			padding: 4px 6px;
+			border-radius: 3px;
+			background: rgba(30, 30, 30, .82);
+			color: #fff;
+			font-size: 11px;
+		}
+		.resource-content { padding: 16px; }
+		.resource-title { margin: 0 0 7px; font-size: 15px; font-weight: 600; }
+		.resource-meta { margin: 0; color: var(--muted); font-size: 12px; }
+		.support-info { margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--line); }
+		.support-label { margin: 0 0 5px; color: var(--muted); font-size: 11px; }
+		.support-detail { margin: 0; color: #555550; font-size: 12px; }
+
+		@media (max-width: 720px) {
+			.topbar { height: 58px; padding: 0 18px; }
+			.layout { min-height: calc(100vh - 58px); flex-direction: column; }
+			.sidebar { width: 100%; flex-basis: auto; padding: 18px; border-right: 0; border-bottom: 1px solid var(--line); }
+			main { padding: 22px 18px 36px; }
+			.course-cover { aspect-ratio: 2 / 1; min-height: 140px; margin-bottom: 20px; }
+			h1 { font-size: 23px; }
+			.resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+		}
+		@media (max-width: 560px) {
+			.resource-grid { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="brand">
+			<img src="../../LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO.svg" alt="Logo de Universidad Central">
+			<span class="brand-name">Videoteca</span>
+			<span class="brand-role">· Profesor</span>
+		</div>
+		<div class="profile">
+			<span>Nombre del profesor</span>
+			<span class="avatar" aria-hidden="true">NP</span>
+		</div>
+	</header>
+
+	<div class="layout">
+		<aside class="sidebar" aria-label="Asignaturas del profesor">
+			<a class="sidebar-link" href="main.html">Panel principal</a>
+			<p class="side-label">Mis asignaturas</p>
+			<ul class="course-list">
+				<li aria-current="page"><a href="asignatura-1.html">Asignatura 1</a></li>
+				<li><span class="course-name">Asignatura 2</span></li>
+				<li><span class="course-name">Asignatura 3</span></li>
+				<li><span class="course-name">Asignatura 4</span></li>
+			</ul>
+		</aside>
+
+		<main>
+			<p class="breadcrumb"><a href="main.html">Panel principal</a> / Asignatura 1</p>
+			<img class="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
+			<h1>Asignatura 1</h1>
+			<p class="course-description">Recursos y contenidos disponibles para esta asignatura.</p>
+
+			<section aria-labelledby="resources-title">
+				<div class="section-heading">
+					<h2 id="resources-title">Recursos de aprendizaje</h2>
+					<span class="resource-count">3 videos · 2 materiales de apoyo</span>
+				</div>
+				<div class="resource-grid">
+					<article class="resource-card">
+						<div class="video-preview">
+							<img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Estetoscopio junto a un computador">
+							<span class="play-mark" aria-hidden="true"></span>
+							<span class="duration">12 min</span>
+						</div>
+						<div class="resource-content">
+							<h3 class="resource-title">Introducción a la asignatura</h3>
+							<p class="resource-meta">Unidad 1 · Video educativo</p>
+							<div class="support-info">
+								<p class="support-label">Material asociado</p>
+								<p class="support-detail">Guía de estudio · PDF</p>
+							</div>
+						</div>
+					</article>
+
+					<article class="resource-card">
+						<div class="video-preview">
+							<img src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Profesional de salud acompañando a una paciente">
+							<span class="play-mark" aria-hidden="true"></span>
+							<span class="duration">18 min</span>
+						</div>
+						<div class="resource-content">
+							<h3 class="resource-title">Controles prenatales</h3>
+							<p class="resource-meta">Unidad 1 · Video educativo</p>
+							<div class="support-info">
+								<p class="support-label">Material asociado</p>
+								<p class="support-detail">Material complementario · PDF</p>
+							</div>
+						</div>
+					</article>
+
+					<article class="resource-card">
+						<div class="video-preview">
+							<img src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Sala de atención clínica">
+							<span class="play-mark" aria-hidden="true"></span>
+							<span class="duration">24 min</span>
+						</div>
+						<div class="resource-content">
+							<h3 class="resource-title">Signos y etapas del trabajo de parto</h3>
+							<p class="resource-meta">Unidad 2 · Video educativo</p>
+							<div class="support-info">
+								<p class="support-label">Información de apoyo</p>
+								<p class="support-detail">Señales de inicio y etapas del trabajo de parto</p>
+							</div>
+						</div>
+					</article>
+				</div>
+			</section>
+		</main>
+	</div>
+</body>
+</html>
