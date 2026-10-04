@@ -154,6 +154,57 @@
 		.support-info { margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--line); }
 		.support-label { margin: 0 0 5px; color: var(--muted); font-size: 11px; }
 		.support-detail { margin: 0; color: #555550; font-size: 12px; }
+		.comments-section { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); }
+		.comment-count { color: var(--muted); font-size: 13px; }
+		.comment-form { margin-bottom: 26px; }
+		.comment-form label { display: block; margin-bottom: 8px; font-weight: 600; }
+		.comment-form textarea {
+			display: block;
+			width: 100%;
+			min-height: 88px;
+			padding: 12px;
+			resize: vertical;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+		}
+		.comment-form textarea:focus { outline: 2px solid #a3a39e; outline-offset: 1px; }
+		.comment-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+		.comment-submit {
+			padding: 9px 14px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--soft);
+			color: var(--text);
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.comment-submit:hover { background: #e8e8e5; }
+		.comment-list { border-top: 1px solid var(--line); }
+		.comment {
+			display: grid;
+			grid-template-columns: 34px minmax(0, 1fr);
+			gap: 12px;
+			padding: 17px 0;
+			border-bottom: 1px solid var(--line);
+		}
+		.comment-avatar {
+			width: 34px;
+			height: 34px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: var(--soft);
+			color: #555550;
+			font-size: 11px;
+			font-weight: 700;
+		}
+		.comment-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+		.comment-author { font-size: 13px; font-weight: 600; }
+		.comment-date { color: var(--muted); font-size: 12px; }
+		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
 
 		@media (max-width: 720px) {
 			.topbar { height: 58px; padding: 0 18px; }
@@ -163,6 +214,7 @@
 			.course-cover { aspect-ratio: 2 / 1; min-height: 140px; margin-bottom: 20px; }
 			h1 { font-size: 23px; }
 			.resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+			.comments-section { margin-top: 34px; padding-top: 22px; }
 		}
 		@media (max-width: 560px) {
 			.resource-grid { grid-template-columns: 1fr; }
@@ -255,7 +307,87 @@
 					</article>
 				</div>
 			</section>
+
+			<section class="comments-section" aria-labelledby="comments-title">
+				<div class="section-heading">
+					<h2 id="comments-title">Comentarios</h2>
+					<span class="comment-count" id="comment-count">2 comentarios</span>
+				</div>
+
+				<form class="comment-form" id="comment-form">
+					<label for="comment-input">Comparte una pregunta o comentario</label>
+					<textarea id="comment-input" name="comment" placeholder="Escribe tu comentario..." required></textarea>
+					<div class="comment-actions">
+						<button class="comment-submit" type="submit">Publicar comentario</button>
+					</div>
+				</form>
+
+				<div class="comment-list" id="comment-list" aria-live="polite">
+					<article class="comment">
+						<span class="comment-avatar" aria-hidden="true">MP</span>
+						<div>
+							<div class="comment-header">
+								<span class="comment-author">María P.</span>
+								<time class="comment-date">Hace 2 horas</time>
+							</div>
+							<p class="comment-text">¿La guía de estudio incluye los puntos clave del primer video?</p>
+						</div>
+					</article>
+					<article class="comment">
+						<span class="comment-avatar" aria-hidden="true">JR</span>
+						<div>
+							<div class="comment-header">
+								<span class="comment-author">Javier R.</span>
+								<time class="comment-date">Ayer</time>
+							</div>
+							<p class="comment-text">El material complementario me ayudó a repasar la unidad.</p>
+						</div>
+					</article>
+				</div>
+			</section>
 		</main>
 	</div>
+	<script>
+		const commentForm = document.querySelector("#comment-form");
+		const commentInput = document.querySelector("#comment-input");
+		const commentList = document.querySelector("#comment-list");
+		const commentCount = document.querySelector("#comment-count");
+
+		commentForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const text = commentInput.value.trim();
+			if (!text) return;
+
+			const comment = document.createElement("article");
+			comment.className = "comment";
+			const avatar = document.createElement("span");
+			avatar.className = "comment-avatar";
+			avatar.setAttribute("aria-hidden", "true");
+			avatar.textContent = "T";
+
+			const content = document.createElement("div");
+			const header = document.createElement("div");
+			header.className = "comment-header";
+			const author = document.createElement("span");
+			author.className = "comment-author";
+			author.textContent = "Tú";
+			const date = document.createElement("time");
+			date.className = "comment-date";
+			date.textContent = "Ahora";
+			header.append(author, date);
+
+			const message = document.createElement("p");
+			message.className = "comment-text";
+			message.textContent = text;
+			content.append(header, message);
+			comment.append(avatar, content);
+			commentList.prepend(comment);
+
+			const total = commentList.querySelectorAll(".comment").length;
+			commentCount.textContent = `${total} ${total === 1 ? "comentario" : "comentarios"}`;
+			commentForm.reset();
+			commentInput.focus();
+		});
+	</script>
 </body>
 </html>
