@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Recurso | Videoteca</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--page: #f5f5f4;
+			--surface: #ffffff;
+			--line: #e5e5e4;
+			--text: #292927;
+			--muted: #777773;
+			--soft: #f0f0ee;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-width: 320px;
+			min-height: 100vh;
+			background: var(--page);
+			color: var(--text);
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 14px;
+		}
+
+		.topbar {
+			height: 64px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 32px;
+			background: var(--surface);
+			border-bottom: 1px solid var(--line);
+		}
+
+		.brand { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+		.brand img { width: 36px; height: 36px; object-fit: contain; }
+		.brand-name { color: var(--text); font-weight: 700; }
+		.brand-role { color: var(--muted); font-weight: 400; }
+		.profile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+		.avatar {
+			width: 32px;
+			height: 32px;
+			display: grid;
+			place-items: center;
+			border: 1px solid var(--line);
+			border-radius: 50%;
+			background: var(--soft);
+			color: var(--text);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.layout { min-height: calc(100vh - 64px); display: flex; }
+		.sidebar {
+			width: 260px;
+			flex: 0 0 260px;
+			padding: 28px 18px;
+			background: var(--surface);
+			border-right: 1px solid var(--line);
+		}
+		.sidebar-link {
+			display: block;
+			margin-bottom: 26px;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: #555550;
+			text-decoration: none;
+		}
+		.side-label {
+			margin: 0 0 10px;
+			color: var(--muted);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: .06em;
+			text-transform: uppercase;
+		}
+		.course-list { list-style: none; margin: 0; padding: 0; }
+		.course-list li { margin-top: 4px; border-radius: 4px; color: #555550; }
+		.course-list a,
+		.course-list .course-name {
+			display: block;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+		}
+		.course-list li[aria-current="page"] a { background: var(--soft); color: var(--text); font-weight: 700; }
+
+		main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 36px 40px 48px; }
+		.back-link {
+			display: inline-block;
+			margin-bottom: 20px;
+			color: #555550;
+			text-decoration: underline;
+			text-underline-offset: 3px;
+		}
+		.resource-meta { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+		.resource-heading {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 20px;
+		}
+		h1 { margin: 0; font-size: 28px; font-weight: 600; }
+		.resource-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+		.resource-action {
+			padding: 9px 14px;
+			border: 1px solid #cfcfc9;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.resource-action-edit { border-color: #f0c28f; background: #fff1df; }
+		.resource-action:hover { background: var(--soft); }
+		.resource-action-edit:hover { background: #ffe6c4; }
+		.video-player {
+			display: block;
+			width: 100%;
+			max-height: 620px;
+			aspect-ratio: 16 / 9;
+			background: #181818;
+			border-radius: 4px;
+		}
+		.resource-description { margin: 14px 0 28px; color: #555550; line-height: 1.6; }
+		.support-section { margin-top: 28px; }
+		.section-heading {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 14px;
+		}
+		h2 { margin: 0; font-size: 18px; font-weight: 600; }
+		.section-count { color: var(--muted); font-size: 13px; }
+		.material-list { display: grid; gap: 10px; }
+		.material-card {
+			display: block;
+			padding: 16px 18px;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+		}
+		.material-card:hover { border-color: #c9a77f; }
+		.material-card:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
+		.material-card h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+		.material-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+		@media (max-width: 720px) {
+			.topbar { height: 58px; padding: 0 18px; }
+			.layout { min-height: calc(100vh - 58px); flex-direction: column; }
+			.sidebar { width: 100%; flex-basis: auto; padding: 18px; border-right: 0; border-bottom: 1px solid var(--line); }
+			main { padding: 24px 18px 36px; }
+			h1 { font-size: 23px; }
+			.resource-heading { align-items: flex-start; flex-direction: column; }
+		}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="brand">
+			<img src="../../LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO.svg" alt="Logo de Universidad Central">
+			<span class="brand-name">Videoteca</span>
+			<span class="brand-role">· Profesor</span>
+		</div>
+		<div class="profile">
+			<span>Nombre del profesor</span>
+			<span class="avatar" aria-hidden="true">NP</span>
+		</div>
+	</header>
+
+	<div class="layout">
+		<aside class="sidebar" aria-label="Asignaturas del profesor">
+			<a class="sidebar-link" href="main.html">Panel principal</a>
+			<p class="side-label">Mis asignaturas</p>
+			<ul class="course-list">
+				<li aria-current="page"><a href="asignatura-1.html">Asignatura 1</a></li>
+				<li><span class="course-name">Asignatura 2</span></li>
+				<li><span class="course-name">Asignatura 3</span></li>
+				<li><span class="course-name">Asignatura 4</span></li>
+			</ul>
+		</aside>
+
+		<main>
+			<a class="back-link" href="asignatura-1.html">← Volver a Asignatura 1</a>
+			<p class="resource-meta" id="resource-meta"></p>
+			<div class="resource-heading">
+				<h1 id="resource-title">Recurso de aprendizaje</h1>
+				<div class="resource-actions">
+					<button type="button" class="resource-action resource-action-edit">Editar recurso</button>
+					<button type="button" class="resource-action">Previsualización estudiante</button>
+				</div>
+			</div>
+			<video class="video-player" controls preload="metadata" poster="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=1280&amp;q=80">
+				<source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+				Tu navegador no permite reproducir este video.
+			</video>
+			<p class="resource-description" id="resource-description"></p>
+
+			<section class="support-section" aria-labelledby="materials-title">
+				<div class="section-heading">
+					<h2 id="materials-title">Documentos y material complementario</h2>
+					<span class="section-count" id="materials-count"></span>
+				</div>
+				<div class="material-list" id="materials-list"></div>
+			</section>
+
+		</main>
+	</div>
+
+	<script>
+		const resources = {
+			introduccion: {
+				title: "Introducción a la asignatura",
+				meta: "Unidad 1 · Video educativo · 12 min",
+				description: "Presentación de los objetivos, contenidos y organización de la asignatura.",
+				materials: [
+					{ title: "Guía de estudio", format: "PDF", description: "Orientaciones y contenidos principales de la asignatura." },
+					{ title: "Material complementario", format: "PDF", description: "Lecturas sugeridas para profundizar los temas de la unidad." }
+				]
+			},
+			"controles-prenatales": {
+				title: "Controles prenatales",
+				meta: "Unidad 1 · Video educativo · 18 min",
+				description: "Revisión de los controles prenatales y su importancia en el seguimiento del embarazo.",
+				materials: [
+					{ title: "Material complementario", format: "PDF", description: "Apuntes y contenidos de apoyo para revisar junto con el video." }
+				]
+			},
+			"trabajo-de-parto": {
+				title: "Signos y etapas del trabajo de parto",
+				meta: "Unidad 2 · Video educativo · 24 min",
+				description: "Descripción de las señales de inicio y las etapas del trabajo de parto.",
+				materials: [
+					{ title: "Información de apoyo", format: "Lectura", description: "Señales de inicio y etapas del trabajo de parto." }
+				]
+			}
+		};
+
+		const selectedId = new URLSearchParams(window.location.search).get("recurso");
+		const resource = resources[selectedId] || resources.introduccion;
+		const title = document.getElementById("resource-title");
+		const materialsList = document.getElementById("materials-list");
+
+		title.textContent = resource.title;
+		document.title = `${resource.title} | Videoteca`;
+		document.getElementById("resource-meta").textContent = resource.meta;
+		document.getElementById("resource-description").textContent = resource.description;
+		document.getElementById("materials-count").textContent = `${resource.materials.length} ${resource.materials.length === 1 ? "material" : "materiales"}`;
+
+		resource.materials.forEach((material) => {
+			const card = document.createElement("a");
+			card.className = "material-card";
+			card.href = "../../prueba.pdf";
+			card.target = "_blank";
+			card.rel = "noopener";
+
+			const heading = document.createElement("h3");
+			heading.textContent = material.title;
+
+			const detail = document.createElement("p");
+			detail.textContent = `${material.format} · ${material.description}`;
+
+			card.append(heading, detail);
+			materialsList.append(card);
+		});
+	</script>
+</body>
+</html>

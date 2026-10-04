@@ -108,13 +108,42 @@
 			object-fit: cover;
 			object-position: center 42%;
 		}
+		.course-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 8px;
+		}
 		h1 { margin: 0; font-size: 28px; font-weight: 600; }
+		.edit-course-btn {
+			padding: 9px 14px;
+			border: 1px solid #f0c28f;
+			border-radius: 4px;
+			background: #fff1df;
+			color: var(--text);
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.edit-course-btn:hover { background: #ffe6c4; }
 		.course-description { margin: 8px 0 30px; color: var(--muted); }
 		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 		h2 { margin: 0; font-size: 17px; font-weight: 600; }
 		.resource-count { color: var(--muted); font-size: 13px; }
 		.resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-		.resource-card { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+		.resource-card {
+			display: block;
+			overflow: hidden;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+			transition: border-color .15s ease, transform .15s ease;
+		}
+		.resource-card:hover { border-color: #c9a77f; transform: translateY(-2px); }
+		.resource-card:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
 		.video-preview { position: relative; aspect-ratio: 16 / 9; background: var(--soft); }
 		.video-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
 		.play-mark {
@@ -247,9 +276,11 @@
 		</aside>
 
 		<main>
-			<p class="breadcrumb"><a href="main.html">Panel principal</a> / Asignatura 1</p>
 			<img class="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
-			<h1>Asignatura 1</h1>
+			<div class="course-header">
+				<h1>Asignatura 1</h1>
+				<button type="button" class="edit-course-btn">Editar asignatura</button>
+			</div>
 			<p class="course-description">Recursos y contenidos disponibles para esta asignatura.</p>
 
 			<section aria-labelledby="resources-title">
@@ -258,7 +289,7 @@
 					<span class="resource-count">3 videos · 2 materiales de apoyo</span>
 				</div>
 				<div class="resource-grid">
-					<article class="resource-card">
+					<a class="resource-card" href="recurso.html?recurso=introduccion">
 						<div class="video-preview">
 							<img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Estetoscopio junto a un computador">
 							<span class="play-mark" aria-hidden="true"></span>
@@ -272,9 +303,9 @@
 								<p class="support-detail">Guía de estudio · PDF</p>
 							</div>
 						</div>
-					</article>
+					</a>
 
-					<article class="resource-card">
+					<a class="resource-card" href="recurso.html?recurso=controles-prenatales">
 						<div class="video-preview">
 							<img src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Profesional de salud acompañando a una paciente">
 							<span class="play-mark" aria-hidden="true"></span>
@@ -288,9 +319,9 @@
 								<p class="support-detail">Material complementario · PDF</p>
 							</div>
 						</div>
-					</article>
+					</a>
 
-					<article class="resource-card">
+					<a class="resource-card" href="recurso.html?recurso=trabajo-de-parto">
 						<div class="video-preview">
 							<img src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Sala de atención clínica">
 							<span class="play-mark" aria-hidden="true"></span>
@@ -304,7 +335,7 @@
 								<p class="support-detail">Señales de inicio y etapas del trabajo de parto</p>
 							</div>
 						</div>
-					</article>
+					</a>
 				</div>
 			</section>
 
