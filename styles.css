@@ -26,54 +26,93 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Si la imagen falla en cargar, se mostrará --color-1 como respaldo */
-.login-body {
+body.login-body {
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
+  background-color: var(--color-1, #1e293b);
+  overflow-x: hidden;
+}
+
+/* Contenedor dividido en 2 columnas */
+.login-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background-color: var(--color-1); /* Color de respaldo si falla la imagen */
-  background-image: url('https://cdn.discordapp.com/attachments/724028415661047818/1554358911530696734/671ffdc9eb62a6dccdadbb29_airtable-5817700ecf15f463b4e7d4a7cbfb213d-psmkztac.png?ex=6abc990b&is=6abb478b&hm=093bcd235fe1bb4352d6331ce95f9356b6ea87ad7ac56a12d3c163973d176db5&'); /* Cambiar imagen */
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  height: 100vh;
+  width: 100vw;
 }
 
 /* ==========================================================================
-   TARJETA CENTRAL DE LOGIN
+   LADO IZQUIERDO (LOGIN HERO)
    ========================================================================== */
-.login-card {
+.login-hero {
+  flex: 1;
+  background-color: var(--color-1);
+  background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url('https://cdn.discordapp.com/attachments/724028415661047818/1554358853628334160/673c1141d616bb252b21df24_airtable-e64688cb7c8aa55226ea42c0979bc133-vosv3a5a.png?ex=6abc98fd&is=6abb477d&hm=cfe7a4461cdef3cf18cd5515cbd7bc644a2e32940a12b7f433a364728f5cc010&');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  display: flex;
+  align-items: flex-end;
+  padding: 60px;
+}
+
+.hero-text {
+  color: var(--color-6);
+  max-width: 500px;
+}
+
+.hero-text h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.hero-text p {
+  color: var(--color-7);
+  font-size: 1.1rem;
+}
+
+/* ==========================================================================
+   LADO DERECHO (LOGIN PANEL)
+   ========================================================================== */
+.login-panel {
+  width: 100%;           /* CAMBIO: adaptable a móviles */
+  max-width: 450px;      /* CAMBIO: tope de ancho para desktop */
+  min-width: 320px;
   background-color: var(--color-2);
+  border-left: 1px solid var(--color-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.login-content {
   width: 100%;
-  max-width: 400px;
-  padding: 40px 30px;
-  border-radius: 12px;
-  border: 1px solid var(--color-3);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  text-align: center;
+  max-width: 340px;
 }
 
 /* Logo */
 .login-logo img {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   object-fit: cover;
 }
 
 /* Títulos */
 .login-title {
   color: var(--color-6);
-  font-size: 1.5rem;
-  margin-bottom: 5px;
+  font-size: 1.6rem;
+  margin-bottom: 6px;
 }
 
 .login-subtitle {
   color: var(--color-8);
-  font-size: 0.9rem;
-  margin-bottom: 25px;
+  font-size: 0.88rem;
+  margin-bottom: 30px;
 }
 
 /* ==========================================================================
@@ -152,28 +191,65 @@
 }
 
 /* ==========================================================================
+   ESTILOS COMPARTIDOS CABECERA (INDEX Y VIDEOTECA)
+   ========================================================================== */
+.site-header {
+  width: 100%;
+  padding: 16px 40px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  /* CAMBIO: Alinea título a la izquierda y botón logout a la derecha */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #111827;
+}
+
+/* CAMBIO: Estilos para el botón de Cerrar Sesión */
+.btn-logout {
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* ==========================================================================
    ESTILOS PARA INDEX.HTML
    ========================================================================== */
 .index-body {
-  background-color: #ffffff; /* Fondo blanco general */
+  background-color: #ffffff;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   color: #111827;
 }
 
-/* Estructura dividida (Menú lateral + Contenido) */
 .index-layout {
   display: flex;
   flex: 1;
 }
 
-/* --------------------------------------------------------------------------
-   MENÚ LATERAL PLEGABLE (SIDEBAR)
-   -------------------------------------------------------------------------- */
+/* Sidebar */
 .sidebar-menu {
   width: 280px;
-  background-color: #f9fafb; /* Gris muy tenue para diferenciarlo del centro */
+  background-color: #f9fafb;
   border-right: 1px solid #e5e7eb;
   padding: 24px 16px;
 }
@@ -187,7 +263,6 @@
   letter-spacing: 0.05em;
 }
 
-/* Acordeón Principal (Ramos) */
 .accordion-item {
   margin-bottom: 8px;
 }
@@ -206,7 +281,6 @@
   margin-top: 6px;
 }
 
-/* Sub-acordeón (Unidades) */
 .sub-accordion-item {
   margin-bottom: 6px;
 }
@@ -247,9 +321,7 @@
   padding: 6px;
 }
 
-/* --------------------------------------------------------------------------
-   CONTENIDO CENTRAL (GRID DE TARJETAS)
-   -------------------------------------------------------------------------- */
+/* Contenido Principal */
 .main-content {
   flex: 1;
   padding: 40px;
@@ -262,7 +334,6 @@
   color: #111827;
 }
 
-/* Grid de los 4 bloques */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -270,9 +341,8 @@
   max-width: 1000px;
 }
 
-/* Estilo de los bloques / tarjetas */
 .class-card {
-  background-color: #f3f4f6; /* Bloque de color gris claro */
+  background-color: #f3f4f6;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 30px 20px;
@@ -292,15 +362,63 @@
   color: #6b7280;
 }
 
-/* Efecto al pasar el mouse por encima de los bloques */
 .class-card:hover {
   transform: translateY(-4px);
   border-color: #2563eb;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
 }
 
-/* Adaptabilidad a pantallas pequeñas */
+/* ==========================================================================
+   VIDEOTECA.HTML
+   ========================================================================== */
+.videoteca-body {
+  background-color: #ffffff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #111827;
+}
+
+.main-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.video-wrapper {
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+  background-color: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ==========================================================================
+   RESPONSIVO (MÓVILES Y TABLETS)
+   ========================================================================== */
 @media (max-width: 768px) {
+  /* Login: Oculta la imagen izquierda en pantallas pequeñas */
+  .login-hero {
+    display: none;
+  }
+  
+  .login-panel {
+    max-width: 100%;
+    border-left: none;
+  }
+
+  /* Index: Aplila sidebar y contenido verticalmente */
   .index-layout {
     flex-direction: column;
   }
@@ -310,55 +428,8 @@
     border-right: none;
     border-bottom: 1px solid #e5e7eb;
   }
-}
 
-/* ==========================================================================
-   VIDEOTECA.HTML
-   ========================================================================== */
-.videoteca-body {
-  background-color: #ffffff; /* Fondo blanco */
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  color: #111827;
-}
-
-/* Cabecera superior */
-.site-header {
-  width: 100%;
-  padding: 20px 40px;
-  border-bottom: 1px solid #e5e7eb; /* Línea gris muy tenue */
-  background-color: #ffffff;
-}
-
-.site-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-/* Contenedor del video centrado */
-.main-container {
-  flex: 1; /* Centrado verticalmente */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.video-wrapper {
-  width: 100%;
-  max-width: 900px; /* Ancho máximo del reproductor */
-  aspect-ratio: 16 / 9; /* Mantiene la proporción horizontal estándar 16:9 */
-  background-color: #000000;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Sombra suave */
-}
-
-.video-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+  .site-header {
+    padding: 16px 20px;
+  }
 }

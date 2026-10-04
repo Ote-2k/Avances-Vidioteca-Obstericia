@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Opción B</title>
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- CAMBIO 1: Script en el <head> para redirigir si YA inició sesión -->
+  <script>
+    if (localStorage.getItem("sesionIniciada")) {
+      window.location.href = "index.html";
+    }
+  </script>
 </head>
 <body>
 
@@ -32,19 +39,19 @@
         <h1 class="login-title">Nombre de la Página</h1>
         <p class="login-subtitle">Ingresa tus credenciales para acceder</p>
 
-        <!-- Formulario visual (redirige directamente a index.html) -->
-        <form action="index.html" class="login-form">
+        <!-- CAMBIO 2: Se agregó id="login-form" y se quitó action="index.html" -->
+        <form id="login-form" class="login-form">
           
           <!-- Campo Correo -->
           <div class="input-group">
             <label for="email">Correo electrónico</label>
-            <input type="email" id="email" placeholder="ejemplo@correo.com">
+            <input type="email" id="email" placeholder="ejemplo@correo.com" required>
           </div>
 
           <!-- Campo Contraseña -->
           <div class="input-group">
             <label for="password">Contraseña</label>
-            <input type="password" id="password" placeholder="••••••••">
+            <input type="password" id="password" placeholder="••••••••" required>
           </div>
 
           <!-- Olvidaste contraseña -->
@@ -61,6 +68,21 @@
     </div>
 
   </div>
+
+  <!-- CAMBIO 3: Script de autenticación justo antes de cerrar </body> -->
+  <script>
+    const form = document.getElementById('login-form');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault(); // Evita que la página se recargue inmediatamente
+
+      // Guarda la marca de sesión en el navegador
+      localStorage.setItem('sesionIniciada', 'true');
+
+      // Redirige al inicio
+      window.location.href = 'index.html';
+    });
+  </script>
 
 </body>
 </html>
