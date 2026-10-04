@@ -178,7 +178,7 @@
 			<a class="sidebar-link" href="#inicio" aria-current="page">Panel principal</a>
 			<p class="side-label">Mis asignaturas</p>
 			<ul class="course-list">
-				<li><a href="asignatura-1.html">Asignatura 1</a></li>
+				<li><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
 				<li><span class="course-name">Asignatura 2</span></li>
 				<li><span class="course-name">Asignatura 3</span></li>
 				<li><span class="course-name">Asignatura 4</span></li>
@@ -265,5 +265,9 @@
 			</section>
 		</main>
 	</div>
+	<script src="editor-store.js"></script>
+	<script>
+		document.querySelector("#course-nav-title").textContent = window.VideotecaStore.get().course.title;
+	</script>
 </body>
 </html>

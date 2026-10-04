@@ -155,6 +155,86 @@
 		.material-card:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
 		.material-card h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
 		.material-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+		.comments-section { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); }
+		.comment-count { color: var(--muted); font-size: 13px; }
+		.comment-form { margin-bottom: 26px; }
+		.comment-form label { display: block; margin-bottom: 8px; font-weight: 600; }
+		.comment-form textarea {
+			display: block;
+			width: 100%;
+			min-height: 88px;
+			padding: 12px;
+			resize: vertical;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+		}
+		.comment-form textarea:focus { outline: 2px solid #a3a39e; outline-offset: 1px; }
+		.comment-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+		.comment-submit {
+			padding: 9px 14px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--soft);
+			color: var(--text);
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.comment-submit:hover { background: #e8e8e5; }
+		.comment-list { border-top: 1px solid var(--line); }
+		.comment {
+			display: grid;
+			grid-template-columns: 34px minmax(0, 1fr);
+			gap: 12px;
+			padding: 17px 0;
+			border-bottom: 1px solid var(--line);
+		}
+		.comment-avatar {
+			width: 34px;
+			height: 34px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: var(--soft);
+			color: #555550;
+			font-size: 11px;
+			font-weight: 700;
+		}
+		.comment-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+		.comment-author { font-size: 13px; font-weight: 600; }
+		.comment-date { color: var(--muted); font-size: 12px; }
+		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
+		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+		.editor-dialog {
+			width: min(560px, calc(100% - 32px));
+			max-height: 90vh;
+			padding: 24px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+		}
+		.editor-dialog::backdrop { background: rgba(20, 20, 20, .42); }
+		.editor-dialog h2 { margin: 0 0 20px; }
+		.editor-form { display: grid; gap: 14px; overflow-y: auto; }
+		.editor-field label { display: block; margin-bottom: 6px; font-weight: 600; }
+		.editor-field input, .editor-field textarea {
+			width: 100%;
+			padding: 10px 11px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: #fff;
+			color: var(--text);
+			font: inherit;
+		}
+		.editor-field textarea { min-height: 84px; resize: vertical; }
+		.editor-field .materials-input { min-height: 120px; }
+		.field-hint { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
 		@media (max-width: 720px) {
 			.topbar { height: 58px; padding: 0 18px; }
 			.layout { min-height: calc(100vh - 58px); flex-direction: column; }
@@ -162,6 +242,7 @@
 			main { padding: 24px 18px 36px; }
 			h1 { font-size: 23px; }
 			.resource-heading { align-items: flex-start; flex-direction: column; }
+			.comments-section { margin-top: 34px; padding-top: 22px; }
 		}
 	</style>
 </head>
@@ -183,7 +264,7 @@
 			<a class="sidebar-link" href="main.html">Panel principal</a>
 			<p class="side-label">Mis asignaturas</p>
 			<ul class="course-list">
-				<li aria-current="page"><a href="asignatura-1.html">Asignatura 1</a></li>
+				<li aria-current="page"><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
 				<li><span class="course-name">Asignatura 2</span></li>
 				<li><span class="course-name">Asignatura 3</span></li>
 				<li><span class="course-name">Asignatura 4</span></li>
@@ -196,15 +277,15 @@
 			<div class="resource-heading">
 				<h1 id="resource-title">Recurso de aprendizaje</h1>
 				<div class="resource-actions">
-					<button type="button" class="resource-action resource-action-edit">Editar recurso</button>
-					<button type="button" class="resource-action">Previsualización estudiante</button>
+					<button type="button" class="resource-action resource-action-edit" id="edit-resource-button">Editar recurso</button>
 				</div>
 			</div>
-			<video class="video-player" controls preload="metadata" poster="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=1280&amp;q=80">
+			<video class="video-player" id="resource-player" controls preload="metadata" poster="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=1280&amp;q=80">
 				<source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
 				Tu navegador no permite reproducir este video.
 			</video>
 			<p class="resource-description" id="resource-description"></p>
+			<p class="save-status" id="resource-save-status" role="status" aria-live="polite"></p>
 
 			<section class="support-section" aria-labelledby="materials-title">
 				<div class="section-heading">
@@ -214,64 +295,211 @@
 				<div class="material-list" id="materials-list"></div>
 			</section>
 
+			<section class="comments-section" aria-labelledby="comments-title">
+				<div class="section-heading">
+					<h2 id="comments-title">Comentarios del recurso</h2>
+					<span class="comment-count" id="comment-count">2 comentarios</span>
+				</div>
+
+				<form class="comment-form" id="comment-form">
+					<textarea id="comment-input" name="comment" aria-label="Escribe tu comentario" placeholder="Escribe tu comentario..." required></textarea>
+					<div class="comment-actions">
+						<button class="comment-submit" type="submit">Publicar comentario</button>
+					</div>
+				</form>
+
+				<div class="comment-list" id="comment-list" aria-live="polite">
+					<article class="comment">
+						<span class="comment-avatar" aria-hidden="true">MP</span>
+						<div>
+							<div class="comment-header">
+								<span class="comment-author">María P.</span>
+								<time class="comment-date">Hace 2 horas</time>
+							</div>
+							<p class="comment-text">¿Podrías explicar un poco más este punto en la próxima clase?</p>
+						</div>
+					</article>
+					<article class="comment">
+						<span class="comment-avatar" aria-hidden="true">JR</span>
+						<div>
+							<div class="comment-header">
+								<span class="comment-author">Javier R.</span>
+								<time class="comment-date">Ayer</time>
+							</div>
+							<p class="comment-text">Gracias, el material de apoyo me ayudó a entender mejor el tema.</p>
+						</div>
+					</article>
+				</div>
+			</section>
+
+			<dialog class="editor-dialog" id="resource-editor">
+				<h2>Editar recurso</h2>
+				<form class="editor-form" id="resource-edit-form">
+					<div class="editor-field">
+						<label for="resource-title-input">Título</label>
+						<input id="resource-title-input" name="title" required>
+					</div>
+					<div class="editor-field">
+						<label for="resource-unit-input">Unidad</label>
+						<input id="resource-unit-input" name="unit" required>
+					</div>
+					<div class="editor-field">
+						<label for="resource-duration-input">Duración</label>
+						<input id="resource-duration-input" name="duration" required>
+					</div>
+					<div class="editor-field">
+						<label for="resource-description-input">Descripción</label>
+						<textarea id="resource-description-input" name="description" required></textarea>
+					</div>
+					<div class="editor-field">
+						<label for="resource-thumbnail-input">URL de la miniatura</label>
+						<input id="resource-thumbnail-input" name="thumbnailUrl" type="url" required>
+					</div>
+					<div class="editor-field">
+						<label for="resource-video-input">URL del video</label>
+						<input id="resource-video-input" name="videoUrl" type="url" required>
+					</div>
+					<div class="editor-field">
+						<label for="resource-materials-input">Material asociado</label>
+						<textarea class="materials-input" id="resource-materials-input" name="materials" aria-describedby="materials-hint"></textarea>
+						<p class="field-hint" id="materials-hint">Un material por línea: título | formato | descripción | URL</p>
+					</div>
+					<div class="editor-actions">
+						<button type="button" id="cancel-resource-edit">Cancelar</button>
+						<button type="submit">Guardar cambios</button>
+					</div>
+				</form>
+			</dialog>
+
 		</main>
 	</div>
 
+	<script src="editor-store.js"></script>
 	<script>
-		const resources = {
-			introduccion: {
-				title: "Introducción a la asignatura",
-				meta: "Unidad 1 · Video educativo · 12 min",
-				description: "Presentación de los objetivos, contenidos y organización de la asignatura.",
-				materials: [
-					{ title: "Guía de estudio", format: "PDF", description: "Orientaciones y contenidos principales de la asignatura." },
-					{ title: "Material complementario", format: "PDF", description: "Lecturas sugeridas para profundizar los temas de la unidad." }
-				]
-			},
-			"controles-prenatales": {
-				title: "Controles prenatales",
-				meta: "Unidad 1 · Video educativo · 18 min",
-				description: "Revisión de los controles prenatales y su importancia en el seguimiento del embarazo.",
-				materials: [
-					{ title: "Material complementario", format: "PDF", description: "Apuntes y contenidos de apoyo para revisar junto con el video." }
-				]
-			},
-			"trabajo-de-parto": {
-				title: "Signos y etapas del trabajo de parto",
-				meta: "Unidad 2 · Video educativo · 24 min",
-				description: "Descripción de las señales de inicio y las etapas del trabajo de parto.",
-				materials: [
-					{ title: "Información de apoyo", format: "Lectura", description: "Señales de inicio y etapas del trabajo de parto." }
-				]
-			}
-		};
-
 		const selectedId = new URLSearchParams(window.location.search).get("recurso");
-		const resource = resources[selectedId] || resources.introduccion;
+		const availableResources = window.VideotecaStore.get().resources;
+		const resourceId = availableResources[selectedId] ? selectedId : "introduccion";
+		const resourceEditor = document.querySelector("#resource-editor");
+		const resourceEditForm = document.querySelector("#resource-edit-form");
 		const title = document.getElementById("resource-title");
 		const materialsList = document.getElementById("materials-list");
+		const resourcePlayer = document.querySelector("#resource-player");
 
-		title.textContent = resource.title;
-		document.title = `${resource.title} | Videoteca`;
-		document.getElementById("resource-meta").textContent = resource.meta;
-		document.getElementById("resource-description").textContent = resource.description;
-		document.getElementById("materials-count").textContent = `${resource.materials.length} ${resource.materials.length === 1 ? "material" : "materiales"}`;
+		function renderResource() {
+			const data = window.VideotecaStore.get();
+			const resource = data.resources[resourceId];
+			title.textContent = resource.title;
+			document.title = `${resource.title} | Videoteca`;
+			document.getElementById("resource-meta").textContent = `${resource.unit} · Video educativo · ${resource.duration}`;
+			document.getElementById("resource-description").textContent = resource.description;
+			document.querySelector(".back-link").textContent = `← Volver a ${data.course.title}`;
+			document.querySelector("#course-nav-title").textContent = data.course.title;
+			resourcePlayer.poster = resource.thumbnailUrl;
+			resourcePlayer.querySelector("source").src = resource.videoUrl;
+			resourcePlayer.load();
+			document.getElementById("materials-count").textContent = `${resource.materials.length} ${resource.materials.length === 1 ? "material" : "materiales"}`;
+			materialsList.replaceChildren();
 
-		resource.materials.forEach((material) => {
-			const card = document.createElement("a");
-			card.className = "material-card";
-			card.href = "../../prueba.pdf";
-			card.target = "_blank";
-			card.rel = "noopener";
+			resource.materials.forEach((material) => {
+				const card = document.createElement("a");
+				card.className = "material-card";
+				card.href = material.url || "../../prueba.pdf";
+				card.target = "_blank";
+				card.rel = "noopener";
 
-			const heading = document.createElement("h3");
-			heading.textContent = material.title;
+				const heading = document.createElement("h3");
+				heading.textContent = material.title;
+				const detail = document.createElement("p");
+				detail.textContent = `${material.format} · ${material.description}`;
+				card.append(heading, detail);
+				materialsList.append(card);
+			});
+		}
 
-			const detail = document.createElement("p");
-			detail.textContent = `${material.format} · ${material.description}`;
+		document.querySelector("#edit-resource-button").addEventListener("click", () => {
+			const resource = window.VideotecaStore.get().resources[resourceId];
+			resourceEditForm.elements.title.value = resource.title;
+			resourceEditForm.elements.unit.value = resource.unit;
+			resourceEditForm.elements.duration.value = resource.duration;
+			resourceEditForm.elements.description.value = resource.description;
+			resourceEditForm.elements.thumbnailUrl.value = resource.thumbnailUrl;
+			resourceEditForm.elements.videoUrl.value = resource.videoUrl;
+			resourceEditForm.elements.materials.value = resource.materials
+								.map((material) => `${material.title} | ${material.format} | ${material.description} | ${material.url || "../../prueba.pdf"}`)
+				.join("\n");
+			resourceEditor.showModal();
+		});
 
-			card.append(heading, detail);
-			materialsList.append(card);
+		document.querySelector("#cancel-resource-edit").addEventListener("click", () => resourceEditor.close());
+		resourceEditForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const formData = new FormData(resourceEditForm);
+			const materials = formData.get("materials")
+				.split(/\r?\n/)
+				.map((line) => line.split("|").map((part) => part.trim()))
+				.filter(([materialTitle]) => materialTitle)
+				.map(([materialTitle, format, description, url], index) => ({
+					title: materialTitle,
+					format: format || "Documento",
+					description: description || "Material de apoyo para el recurso.",
+					url: url || window.VideotecaStore.get().resources[resourceId].materials[index]?.url || "../../prueba.pdf"
+				}));
+
+			window.VideotecaStore.saveResource(resourceId, {
+				title: formData.get("title").trim(),
+				unit: formData.get("unit").trim(),
+				duration: formData.get("duration").trim(),
+				description: formData.get("description").trim(),
+				thumbnailUrl: formData.get("thumbnailUrl").trim(),
+				videoUrl: formData.get("videoUrl").trim(),
+				materials
+			});
+			renderResource();
+			resourceEditor.close();
+			document.querySelector("#resource-save-status").textContent = "Cambios guardados en este navegador.";
+		});
+
+		renderResource();
+
+		const commentForm = document.querySelector("#comment-form");
+		const commentInput = document.querySelector("#comment-input");
+		const commentList = document.querySelector("#comment-list");
+		const commentCount = document.querySelector("#comment-count");
+
+		commentForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const text = commentInput.value.trim();
+			if (!text) return;
+
+			const comment = document.createElement("article");
+			comment.className = "comment";
+			const avatar = document.createElement("span");
+			avatar.className = "comment-avatar";
+			avatar.setAttribute("aria-hidden", "true");
+			avatar.textContent = "T";
+
+			const content = document.createElement("div");
+			const header = document.createElement("div");
+			header.className = "comment-header";
+			const author = document.createElement("span");
+			author.className = "comment-author";
+			author.textContent = "Tú";
+			const date = document.createElement("time");
+			date.className = "comment-date";
+			date.textContent = "Ahora";
+			header.append(author, date);
+
+			const message = document.createElement("p");
+			message.className = "comment-text";
+			message.textContent = text;
+			content.append(header, message);
+			comment.append(avatar, content);
+			commentList.prepend(comment);
+
+			const total = commentList.querySelectorAll(".comment").length;
+			commentCount.textContent = `${total} ${total === 1 ? "comentario" : "comentarios"}`;
+			commentForm.reset();
+			commentInput.focus();
 		});
 	</script>
 </body>

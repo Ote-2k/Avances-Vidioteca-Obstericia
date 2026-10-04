@@ -127,6 +127,33 @@
 			cursor: pointer;
 		}
 		.edit-course-btn:hover { background: #ffe6c4; }
+		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+		.editor-dialog {
+			width: min(520px, calc(100% - 32px));
+			max-height: 90vh;
+			padding: 24px;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+		}
+		.editor-dialog::backdrop { background: rgba(20, 20, 20, .42); }
+		.editor-dialog h2 { margin: 0 0 20px; }
+		.editor-form { display: grid; gap: 14px; }
+		.editor-field label { display: block; margin-bottom: 6px; font-weight: 600; }
+		.editor-field input, .editor-field textarea {
+			width: 100%;
+			padding: 10px 11px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: #fff;
+			color: var(--text);
+			font: inherit;
+		}
+		.editor-field textarea { min-height: 84px; resize: vertical; }
+		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
 		.course-description { margin: 8px 0 30px; color: var(--muted); }
 		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 		h2 { margin: 0; font-size: 17px; font-weight: 600; }
@@ -268,7 +295,7 @@
 			<a class="sidebar-link" href="main.html">Panel principal</a>
 			<p class="side-label">Mis asignaturas</p>
 			<ul class="course-list">
-				<li aria-current="page"><a href="asignatura-1.html">Asignatura 1</a></li>
+				<li aria-current="page"><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
 				<li><span class="course-name">Asignatura 2</span></li>
 				<li><span class="course-name">Asignatura 3</span></li>
 				<li><span class="course-name">Asignatura 4</span></li>
@@ -276,67 +303,20 @@
 		</aside>
 
 		<main>
-			<img class="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
+			<img class="course-cover" id="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
 			<div class="course-header">
-				<h1>Asignatura 1</h1>
-				<button type="button" class="edit-course-btn">Editar asignatura</button>
+				<h1 id="course-title">Asignatura 1</h1>
+				<button type="button" class="edit-course-btn" id="edit-course-button">Editar asignatura</button>
 			</div>
-			<p class="course-description">Recursos y contenidos disponibles para esta asignatura.</p>
+			<p class="course-description" id="course-description">Recursos y contenidos disponibles para esta asignatura.</p>
+			<p class="save-status" id="course-save-status" role="status" aria-live="polite"></p>
 
 			<section aria-labelledby="resources-title">
 				<div class="section-heading">
 					<h2 id="resources-title">Recursos de aprendizaje</h2>
-					<span class="resource-count">3 videos · 2 materiales de apoyo</span>
+					<span class="resource-count" id="resource-count"></span>
 				</div>
-				<div class="resource-grid">
-					<a class="resource-card" href="recurso.html?recurso=introduccion">
-						<div class="video-preview">
-							<img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Estetoscopio junto a un computador">
-							<span class="play-mark" aria-hidden="true"></span>
-							<span class="duration">12 min</span>
-						</div>
-						<div class="resource-content">
-							<h3 class="resource-title">Introducción a la asignatura</h3>
-							<p class="resource-meta">Unidad 1 · Video educativo</p>
-							<div class="support-info">
-								<p class="support-label">Material asociado</p>
-								<p class="support-detail">Guía de estudio · PDF</p>
-							</div>
-						</div>
-					</a>
-
-					<a class="resource-card" href="recurso.html?recurso=controles-prenatales">
-						<div class="video-preview">
-							<img src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Profesional de salud acompañando a una paciente">
-							<span class="play-mark" aria-hidden="true"></span>
-							<span class="duration">18 min</span>
-						</div>
-						<div class="resource-content">
-							<h3 class="resource-title">Controles prenatales</h3>
-							<p class="resource-meta">Unidad 1 · Video educativo</p>
-							<div class="support-info">
-								<p class="support-label">Material asociado</p>
-								<p class="support-detail">Material complementario · PDF</p>
-							</div>
-						</div>
-					</a>
-
-					<a class="resource-card" href="recurso.html?recurso=trabajo-de-parto">
-						<div class="video-preview">
-							<img src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&amp;fit=crop&amp;w=900&amp;q=80" alt="Sala de atención clínica">
-							<span class="play-mark" aria-hidden="true"></span>
-							<span class="duration">24 min</span>
-						</div>
-						<div class="resource-content">
-							<h3 class="resource-title">Signos y etapas del trabajo de parto</h3>
-							<p class="resource-meta">Unidad 2 · Video educativo</p>
-							<div class="support-info">
-								<p class="support-label">Información de apoyo</p>
-								<p class="support-detail">Señales de inicio y etapas del trabajo de parto</p>
-							</div>
-						</div>
-					</a>
-				</div>
+				<div class="resource-grid" id="resource-grid"></div>
 			</section>
 
 			<section class="comments-section" aria-labelledby="comments-title">
@@ -376,9 +356,123 @@
 					</article>
 				</div>
 			</section>
+
+			<dialog class="editor-dialog" id="course-editor">
+				<h2>Editar asignatura</h2>
+				<form class="editor-form" id="course-edit-form">
+					<div class="editor-field">
+						<label for="course-title-input">Nombre</label>
+						<input id="course-title-input" name="title" required>
+					</div>
+					<div class="editor-field">
+						<label for="course-description-input">Descripción</label>
+						<textarea id="course-description-input" name="description" required></textarea>
+					</div>
+					<div class="editor-field">
+						<label for="course-cover-input">URL de la portada</label>
+						<input id="course-cover-input" name="coverUrl" type="url" required>
+					</div>
+					<div class="editor-actions">
+						<button type="button" id="cancel-course-edit">Cancelar</button>
+						<button type="submit">Guardar cambios</button>
+					</div>
+				</form>
+			</dialog>
 		</main>
 	</div>
+	<script src="editor-store.js"></script>
 	<script>
+		const courseEditor = document.querySelector("#course-editor");
+		const courseEditForm = document.querySelector("#course-edit-form");
+		const resourceGrid = document.querySelector("#resource-grid");
+		const resourceCount = document.querySelector("#resource-count");
+
+		function renderCourse() {
+			const data = window.VideotecaStore.get();
+			document.title = `${data.course.title} | Videoteca`;
+			document.querySelector("#course-title").textContent = data.course.title;
+			document.querySelector("#course-nav-title").textContent = data.course.title;
+			document.querySelector("#course-description").textContent = data.course.description;
+			const cover = document.querySelector("#course-cover");
+			cover.src = data.course.coverUrl;
+			cover.alt = `Portada de ${data.course.title}`;
+
+			const resources = Object.entries(data.resources);
+			const materialCount = resources.reduce((total, [, resource]) => total + resource.materials.length, 0);
+			resourceCount.textContent = `${resources.length} videos · ${materialCount} materiales de apoyo`;
+			resourceGrid.replaceChildren();
+
+			resources.forEach(([id, resource]) => {
+				const card = document.createElement("a");
+				card.className = "resource-card";
+				card.href = `recurso.html?recurso=${encodeURIComponent(id)}`;
+
+				const preview = document.createElement("div");
+				preview.className = "video-preview";
+				const image = document.createElement("img");
+				image.src = resource.thumbnailUrl;
+				image.alt = `Miniatura de ${resource.title}`;
+				const playMark = document.createElement("span");
+				playMark.className = "play-mark";
+				playMark.setAttribute("aria-hidden", "true");
+				const duration = document.createElement("span");
+				duration.className = "duration";
+				duration.textContent = resource.duration;
+				preview.append(image, playMark, duration);
+
+				const content = document.createElement("div");
+				content.className = "resource-content";
+				const title = document.createElement("h3");
+				title.className = "resource-title";
+				title.textContent = resource.title;
+				const meta = document.createElement("p");
+				meta.className = "resource-meta";
+				meta.textContent = `${resource.unit} · Video educativo`;
+				content.append(title, meta);
+
+				const material = resource.materials[0];
+				if (material) {
+					const support = document.createElement("div");
+					support.className = "support-info";
+					const label = document.createElement("p");
+					label.className = "support-label";
+					label.textContent = "Material asociado";
+					const detail = document.createElement("p");
+					detail.className = "support-detail";
+					detail.textContent = `${material.title} · ${material.format}`;
+					support.append(label, detail);
+					content.append(support);
+				}
+
+				card.append(preview, content);
+				resourceGrid.append(card);
+			});
+		}
+
+		document.querySelector("#edit-course-button").addEventListener("click", () => {
+			const course = window.VideotecaStore.get().course;
+			courseEditForm.elements.title.value = course.title;
+			courseEditForm.elements.description.value = course.description;
+			courseEditForm.elements.coverUrl.value = course.coverUrl;
+			courseEditor.showModal();
+		});
+
+		document.querySelector("#cancel-course-edit").addEventListener("click", () => courseEditor.close());
+		courseEditForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const formData = new FormData(courseEditForm);
+			window.VideotecaStore.saveCourse({
+				title: formData.get("title").trim(),
+				description: formData.get("description").trim(),
+				coverUrl: formData.get("coverUrl").trim()
+			});
+			renderCourse();
+			courseEditor.close();
+			document.querySelector("#course-save-status").textContent = "Cambios guardados en este navegador.";
+		});
+
+		renderCourse();
+
 		const commentForm = document.querySelector("#comment-form");
 		const commentInput = document.querySelector("#comment-input");
 		const commentList = document.querySelector("#comment-list");
