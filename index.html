@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio - Nombre de la Página</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="index-body">
+
+  <!-- Cabecera idéntica a Videoteca -->
+  <header class="site-header">
+    <h1 class="site-title">Nombre de la Página</h1>
+  </header>
+
+  <!-- Layout Principal: Menú Izquierda + Contenido Central -->
+  <div class="index-layout">
+
+    <!-- Menú Plegable Lateral (Izquierda) -->
+    <aside class="sidebar-menu">
+      <h2 class="sidebar-title">Asignaturas</h2>
+
+      <!-- Ramo 1 -->
+      <details class="accordion-item" open>
+        <summary class="accordion-header">Ramo 1</summary>
+        <div class="accordion-content">
+          
+          <details class="sub-accordion-item">
+            <summary class="sub-accordion-header">Unidad 1</summary>
+            <div class="sub-accordion-content">
+              <a href="videoteca.html">Clase A</a>
+              <a href="videoteca.html">Clase B</a>
+            </div>
+          </details>
+
+          <!-- Unidad 2 desplegada que contiene las Clases 1, 2, 3 y 4 -->
+          <details class="sub-accordion-item" open>
+            <summary class="sub-accordion-header">Unidad 2</summary>
+            <div class="sub-accordion-content">
+              <a href="videoteca.html">Clase 1</a>
+              <a href="videoteca.html">Clase 2</a>
+              <a href="videoteca.html">Clase 3</a>
+              <a href="videoteca.html">Clase 4</a>
+            </div>
+          </details>
+
+          <details class="sub-accordion-item">
+            <summary class="sub-accordion-header">Unidad 3</summary>
+            <div class="sub-accordion-content">
+              <a href="videoteca.html">Clase C</a>
+            </div>
+          </details>
+
+        </div>
+      </details>
+
+      <!-- Ramo 2 -->
+      <details class="accordion-item">
+        <summary class="accordion-header">Ramo 2</summary>
+        <div class="accordion-content">
+          <p class="placeholder-text">Contenido de Ramo 2</p>
+        </div>
+      </details>
+
+      <!-- Ramo 3 -->
+      <details class="accordion-item">
+        <summary class="accordion-header">Ramo 3</summary>
+        <div class="accordion-content">
+          <p class="placeholder-text">Contenido de Ramo 3</p>
+        </div>
+      </details>
+
+    </aside>
+
+    <!-- Contenido Principal Central (Grid de Tarjetas) -->
+    <main class="main-content">
+      <h2 class="content-title">Clases Disponibles</h2>
+
+      <div class="cards-grid">
+        <a href="videoteca.html" class="class-card">
+          <h3>Clase 1</h3>
+          <p>Ver video de la clase</p>
+        </a>
+
+        <a href="videoteca.html" class="class-card">
+          <h3>Clase 2</h3>
+          <p>Ver video de la clase</p>
+        </a>
+
+        <a href="videoteca.html" class="class-card">
+          <h3>Clase 3</h3>
+          <p>Ver video de la clase</p>
+        </a>
+
+        <a href="videoteca.html" class="class-card">
+          <h3>Clase 4</h3>
+          <p>Ver video de la clase</p>
+        </a>
+      </div>
+    </main>
+
+  </div>
+
+</body>
+</html>
