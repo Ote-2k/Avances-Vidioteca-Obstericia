@@ -4,12 +4,12 @@
 	const courseTitle = document.querySelector("#course-title");
 	const courseDescription = document.querySelector("#course-description");
 	const courseSaveStatus = document.querySelector("#course-save-status");
-	const addResourceDialog = document.querySelector("#add-resource-dialog");
-	const addResourceForm = document.querySelector("#add-resource-form");
 	const commentList = document.querySelector("#comment-list");
 	const commentCount = document.querySelector("#comment-count");
 	const commentForm = document.querySelector("#comment-form");
 	const commentInput = document.querySelector("#comment-input");
+	const mentionResourceOptions = document.querySelector("#mention-resource-options");
+	const commentDrafts = new WeakMap();
 	let isEditing = false;
 
 	function renderCourse(statusMessage = "") {
@@ -22,7 +22,7 @@
 		cover.src = data.course.coverUrl;
 		cover.alt = `Portada de ${data.course.title}`;
 
-		const resources = Object.entries(data.resources);
+		const resources = Object.entries(data.resources).filter(([, resource]) => !resource.isDraft);
 		const visibleResources = resources.filter(([, resource]) => !resource.isHidden);
 		const hiddenCount = resources.length - visibleResources.length;
 		const materialCount = visibleResources.reduce((total, [, resource]) => total + resource.materials.length, 0);
@@ -34,6 +34,7 @@
 		resources.filter(([, resource]) => isEditing || !resource.isHidden).forEach(([id, resource]) => {
 			const card = document.createElement("article");
 			card.className = `resource-card${resource.isHidden ? " is-hidden" : ""}`;
+			card.dataset.resourceCardId = id;
 
 			const preview = document.createElement("div");
 			preview.className = "video-preview";
@@ -108,43 +109,196 @@
 		courseSaveStatus.textContent = statusMessage;
 	}
 
+	function getMentionableResources() {
+		return Object.entries(window.VideotecaStore.get().resources)
+			.filter(([, resource]) => !resource.isDraft && (!resource.isHidden || isEditing));
+	}
+
+	function getCommentDraft(textarea) {
+		if (!commentDrafts.has(textarea)) commentDrafts.set(textarea, { text: textarea.value, mentions: [] });
+		return commentDrafts.get(textarea);
+	}
+
+	function shiftMentions(mentions, start, end, replacementLength) {
+		const difference = replacementLength - (end - start);
+		return mentions.flatMap((mention) => {
+			if (mention.end <= start) return [mention];
+			if (mention.start >= end) return [{ ...mention, start: mention.start + difference, end: mention.end + difference }];
+			return [];
+		});
+	}
+
+	function updateCommentDraft(textarea) {
+		const draft = getCommentDraft(textarea);
+		const previousText = draft.text;
+		const nextText = textarea.value;
+		let start = 0;
+		while (start < previousText.length && start < nextText.length && previousText[start] === nextText[start]) start++;
+		let suffix = 0;
+		while (suffix < previousText.length - start && suffix < nextText.length - start && previousText.at(-1 - suffix) === nextText.at(-1 - suffix)) suffix++;
+		const previousEnd = previousText.length - suffix;
+		const replacementLength = nextText.length - start - suffix;
+		draft.mentions = shiftMentions(draft.mentions, start, previousEnd, replacementLength);
+		draft.text = nextText;
+	}
+
+	function insertResourceMention(textarea, resourceId) {
+		const resource = window.VideotecaStore.get().resources[resourceId];
+		if (!resource || resource.isDraft || (resource.isHidden && !isEditing)) return;
+		updateCommentDraft(textarea);
+		const draft = getCommentDraft(textarea);
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const before = textarea.value.slice(0, start);
+		const after = textarea.value.slice(end);
+		const prefix = before && !/\s$/.test(before) ? " " : "";
+		const suffix = after && !/^\s/.test(after) ? " " : "";
+		const mentionText = `${prefix}${resource.title}${suffix}`;
+		draft.mentions = shiftMentions(draft.mentions, start, end, mentionText.length);
+		const mentionStart = start + prefix.length;
+		draft.mentions.push({ resourceId, start: mentionStart, end: mentionStart + resource.title.length });
+		textarea.value = `${before}${mentionText}${after}`;
+		draft.text = textarea.value;
+		textarea.focus();
+		textarea.setSelectionRange(start + mentionText.length, start + mentionText.length);
+	}
+
+	function appendCommentText(target, comment) {
+		const text = String(comment.text || "");
+		const mentions = (comment.resourceMentions || [])
+			.filter((mention) => Number.isInteger(mention.start) && Number.isInteger(mention.end) && mention.start >= 0 && mention.end <= text.length && mention.end > mention.start && window.VideotecaStore.get().resources[mention.resourceId])
+			.sort((first, second) => first.start - second.start);
+		let lastIndex = 0;
+		mentions.forEach((mention) => {
+			if (mention.start < lastIndex) return;
+			target.append(document.createTextNode(text.slice(lastIndex, mention.start)));
+			const link = document.createElement("button");
+			link.type = "button";
+			link.className = "comment-resource-mention";
+			link.dataset.resourceMentionId = mention.resourceId;
+			link.textContent = text.slice(mention.start, mention.end);
+			link.setAttribute("aria-label", `Resaltar recurso ${link.textContent}`);
+			target.append(link);
+			lastIndex = mention.end;
+		});
+		target.append(document.createTextNode(text.slice(lastIndex)));
+	}
+
+	function createMentionMenu(textarea) {
+		const menu = document.createElement("details");
+		menu.className = "resource-mention-menu";
+		const summary = document.createElement("summary");
+		summary.textContent = "Mencionar recurso";
+		const panel = document.createElement("div");
+		panel.className = "resource-mention-panel";
+		populateMentionOptions(panel);
+		if (!panel.childElementCount) {
+			const emptyState = document.createElement("span");
+			emptyState.className = "resource-mention-empty";
+			emptyState.textContent = "No hay recursos disponibles.";
+			panel.append(emptyState);
+		}
+		menu.append(summary, panel);
+		return menu;
+	}
+
+	function populateMentionOptions(panel) {
+		panel.replaceChildren();
+		getMentionableResources().forEach(([id, resource]) => {
+			const option = document.createElement("button");
+			option.type = "button";
+			option.className = "resource-mention-option";
+			option.dataset.resourceMentionOption = id;
+			option.textContent = resource.title;
+			panel.append(option);
+		});
+		if (!panel.childElementCount) {
+			const emptyState = document.createElement("span");
+			emptyState.className = "resource-mention-empty";
+			emptyState.textContent = "No hay recursos disponibles.";
+			panel.append(emptyState);
+		}
+	}
+
+	function createCommentArticle(comment, isReply = false) {
+		const article = document.createElement("article");
+		article.className = isReply ? "comment comment-reply" : "comment";
+		const avatar = document.createElement("span");
+		avatar.className = "comment-avatar";
+		avatar.setAttribute("aria-hidden", "true");
+		avatar.textContent = comment.initials;
+		const content = document.createElement("div");
+		content.className = "comment-layout";
+		const header = document.createElement("div");
+		header.className = "comment-header";
+		const author = document.createElement("span");
+		author.className = "comment-author";
+		author.textContent = comment.author;
+		const date = document.createElement("time");
+		date.className = "comment-date";
+		date.textContent = comment.date;
+		header.append(author, date);
+		const text = document.createElement("p");
+		text.className = "comment-text";
+		appendCommentText(text, comment);
+		content.append(header, text);
+		const actions = document.createElement("div");
+		actions.className = "comment-inline-actions";
+		if (!isReply) {
+			const replyButton = document.createElement("button");
+			replyButton.type = "button";
+			replyButton.className = "comment-reply-toggle";
+			replyButton.dataset.replyTo = comment.id;
+			replyButton.setAttribute("aria-expanded", "false");
+			replyButton.textContent = "Responder";
+			actions.append(replyButton);
+		}
+		if (isEditing) {
+			const removeButton = document.createElement("button");
+			removeButton.type = "button";
+			removeButton.className = "comment-remove";
+			removeButton.dataset.commentId = comment.id;
+			removeButton.textContent = "Eliminar comentario";
+			actions.append(removeButton);
+		}
+		if (actions.childElementCount) content.append(actions);
+		article.append(avatar, content);
+		return { article, content };
+	}
+
 	function renderComments() {
 		const comments = window.VideotecaStore.get().comments.course;
 		commentCount.textContent = `${comments.length} ${comments.length === 1 ? "comentario" : "comentarios"}`;
 		commentList.replaceChildren();
-		comments.forEach((comment) => {
-			const article = document.createElement("article");
-			article.className = "comment";
-			const avatar = document.createElement("span");
-			avatar.className = "comment-avatar";
-			avatar.setAttribute("aria-hidden", "true");
-			avatar.textContent = comment.initials;
+		populateMentionOptions(mentionResourceOptions);
+		comments.filter((comment) => !comment.parentId).forEach((comment) => {
+			const { article, content } = createCommentArticle(comment);
+			const replyForm = document.createElement("form");
+			replyForm.className = "comment-reply-form";
+			replyForm.dataset.replyFormFor = comment.id;
+			replyForm.hidden = true;
+			const replyInput = document.createElement("textarea");
+			replyInput.name = "reply";
+			replyInput.setAttribute("aria-label", `Respuesta a ${comment.author}`);
+			replyInput.placeholder = "Escribe una respuesta...";
+			replyInput.required = true;
+			const replyActions = document.createElement("div");
+			replyActions.className = "comment-actions";
+			const replySubmit = document.createElement("button");
+			replySubmit.type = "submit";
+			replySubmit.className = "comment-submit";
+			replySubmit.textContent = "Responder";
+			replyActions.append(createMentionMenu(replyInput), replySubmit);
+			replyForm.append(replyInput, replyActions);
+			content.append(replyForm);
 
-			const content = document.createElement("div");
-			content.className = "comment-layout";
-			const header = document.createElement("div");
-			header.className = "comment-header";
-			const author = document.createElement("span");
-			author.className = "comment-author";
-			author.textContent = comment.author;
-			const date = document.createElement("time");
-			date.className = "comment-date";
-			date.textContent = comment.date;
-			header.append(author, date);
-			const text = document.createElement("p");
-			text.className = "comment-text";
-			text.textContent = comment.text;
-			content.append(header, text);
-
-			if (isEditing) {
-				const removeButton = document.createElement("button");
-				removeButton.type = "button";
-				removeButton.className = "comment-remove";
-				removeButton.dataset.commentId = comment.id;
-				removeButton.textContent = "Eliminar comentario";
-				content.append(removeButton);
+			const replies = comments.filter((item) => item.parentId === comment.id);
+			if (replies.length) {
+				const replyList = document.createElement("div");
+				replyList.className = "comment-replies";
+				replies.forEach((reply) => replyList.append(createCommentArticle(reply, true).article));
+				article.append(replyList);
 			}
-			article.append(avatar, content);
 			commentList.append(article);
 		});
 	}
@@ -167,14 +321,16 @@
 		renderCourse();
 		renderComments();
 	}
-	function createComment(text) {
+	function createComment(text, resourceMentions = []) {
 		window.VideotecaStore.addComment("course", {
 			author: "Tú",
 			initials: "T",
 			date: "Ahora",
-			text
+			text,
+			resourceMentions
 		});
 		commentForm.reset();
+		commentDrafts.set(commentInput, { text: "", mentions: [] });
 		renderComments();
 	}
 	document.querySelector("#edit-course-button").addEventListener("click", () => setEditing(!isEditing));
@@ -224,43 +380,83 @@
 		}
 	});
 
-	document.querySelector("#add-resource-button").addEventListener("click", () => addResourceDialog.showModal());
-	document.querySelector("#cancel-add-resource").addEventListener("click", () => addResourceDialog.close());
-	addResourceForm.addEventListener("submit", (event) => {
-		event.preventDefault();
-		const formData = new FormData(addResourceForm);
-		const materialTitle = formData.get("materialTitle").trim();
-		window.VideotecaStore.createResource({
-			title: formData.get("title").trim(),
-			unit: formData.get("unit").trim(),
-			duration: formData.get("duration").trim(),
-			description: formData.get("description").trim(),
-			thumbnailUrl: formData.get("thumbnailUrl").trim(),
-			videoUrl: formData.get("videoUrl").trim(),
-			materials: [{
-				title: materialTitle,
-				format: formData.get("materialFormat").trim(),
-				description: formData.get("materialDescription").trim(),
-				url: formData.get("materialUrl").trim()
-			}]
-		});
-		addResourceForm.reset();
-		addResourceDialog.close();
-		renderCourse("Recurso añadido.");
+	document.querySelector("#add-resource-button").addEventListener("click", () => {
+		window.location.href = "recurso.html?nuevo=1";
+	});
+
+	commentInput.addEventListener("input", () => updateCommentDraft(commentInput));
+	commentForm.addEventListener("click", (event) => {
+		const option = event.target.closest("[data-resource-mention-option]");
+		if (!option) return;
+		insertResourceMention(commentInput, option.dataset.resourceMentionOption);
+		option.closest("details").open = false;
+	});
+	commentList.addEventListener("input", (event) => {
+		const textarea = event.target.closest(".comment-reply-form textarea");
+		if (textarea) updateCommentDraft(textarea);
 	});
 
 	commentList.addEventListener("click", (event) => {
-		const button = event.target.closest("[data-comment-id]");
-		if (!button || !window.confirm("¿Eliminar este comentario?")) return;
-		window.VideotecaStore.deleteComment("course", button.dataset.commentId);
+		const mentionOption = event.target.closest("[data-resource-mention-option]");
+		if (mentionOption) {
+			const textarea = mentionOption.closest("form").querySelector("textarea");
+			insertResourceMention(textarea, mentionOption.dataset.resourceMentionOption);
+			mentionOption.closest("details").open = false;
+			return;
+		}
+		const mention = event.target.closest("[data-resource-mention-id]");
+		if (mention) {
+			const card = [...resourceGrid.children].find((item) => item.dataset.resourceCardId === mention.dataset.resourceMentionId);
+			if (!card) {
+				courseSaveStatus.textContent = "El recurso mencionado ya no está disponible en la página.";
+				return;
+			}
+			card.scrollIntoView({ behavior: "smooth", block: "center" });
+			card.classList.remove("resource-mentioned");
+			void card.offsetWidth;
+			card.classList.add("resource-mentioned");
+			window.setTimeout(() => card.classList.remove("resource-mentioned"), 2600);
+			return;
+		}
+		const replyButton = event.target.closest("[data-reply-to]");
+		if (replyButton) {
+			const replyForm = replyButton.closest(".comment-layout").querySelector(".comment-reply-form");
+			replyForm.hidden = !replyForm.hidden;
+			replyButton.setAttribute("aria-expanded", String(!replyForm.hidden));
+			if (!replyForm.hidden) replyForm.querySelector("textarea").focus();
+			return;
+		}
+		const removeButton = event.target.closest("[data-comment-id]");
+		if (!removeButton || !window.confirm("¿Eliminar este comentario y sus respuestas?")) return;
+		window.VideotecaStore.deleteComment("course", removeButton.dataset.commentId);
 		renderComments();
+	});
+
+	commentList.addEventListener("submit", (event) => {
+		const form = event.target.closest("[data-reply-form-for]");
+		if (!form) return;
+		event.preventDefault();
+		const textarea = form.elements.reply;
+		const text = textarea.value.trim();
+		if (!text) return;
+		const draft = getCommentDraft(textarea);
+		window.VideotecaStore.addComment("course", {
+			parentId: form.dataset.replyFormFor,
+			author: "Tú",
+			initials: "T",
+			date: "Ahora",
+			text,
+			resourceMentions: draft.mentions
+		});
+		renderComments();
+		courseSaveStatus.textContent = "Respuesta publicada.";
 	});
 
 	commentForm.addEventListener("submit", (event) => {
 		event.preventDefault();
 		const text = commentInput.value.trim();
 		if (!text) return;
-		createComment(text);
+		createComment(text, getCommentDraft(commentInput).mentions);
 		commentInput.focus();
 	});
 

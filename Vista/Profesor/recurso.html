@@ -116,6 +116,8 @@
 		.resource-action:hover { background: var(--soft); }
 		.resource-action-edit:hover { background: #ffe6c4; }
 		body.editing-resource .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
+		body.resource-creation-pending .editable:empty::before { color: var(--muted); content: attr(data-placeholder); }
+		body.resource-creation-pending .comments-section { display: none; }
 		.video-attachment { margin: -6px 0 14px; }
 		.video-attachment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 		.video-attachment-heading h2 { font-size: 14px; }
@@ -414,7 +416,7 @@
 
 		<main>
 			<div class="resource-heading">
-				<h1 class="editable" id="resource-title" aria-label="Título del recurso">Recurso de aprendizaje</h1>
+				<h1 class="editable" id="resource-title" data-placeholder="Título del recurso" aria-label="Título del recurso">Recurso de aprendizaje</h1>
 				<div class="resource-actions">
 					<button type="button" class="resource-action" id="edit-resource-button">Editar recurso</button>
 				</div>
@@ -479,7 +481,7 @@
 				</section>
 			</div>
 			<p class="resource-meta" id="resource-meta"></p>
-			<p class="resource-description editable" id="resource-description" aria-label="Descripción del recurso"></p>
+			<p class="resource-description editable" id="resource-description" data-placeholder="Descripción del recurso" aria-label="Descripción del recurso"></p>
 			<p class="save-status" id="resource-save-status" role="status" aria-live="polite"></p>
 
 			<section class="support-section" aria-labelledby="materials-title">

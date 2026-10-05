@@ -1,7 +1,26 @@
 (() => {
-	const selectedId = new URLSearchParams(window.location.search).get("recurso");
+	const pageParams = new URLSearchParams(window.location.search);
+	const selectedId = pageParams.get("recurso");
 	const initialResources = window.VideotecaStore.get().resources;
-	const resourceId = initialResources[selectedId] ? selectedId : "introduccion";
+	let resourceId = initialResources[selectedId] ? selectedId : "introduccion";
+	let isCreatingResource = pageParams.get("nuevo") === "1";
+	if (isCreatingResource && !initialResources[resourceId]?.isDraft) {
+		resourceId = window.VideotecaStore.createResource({
+			title: "",
+			unit: "Unidad 1",
+			duration: "Por definir",
+			description: "",
+			thumbnailUrl: initialResources.introduccion.thumbnailUrl,
+			videoUrl: "",
+			materials: [],
+			popups: [],
+			isDraft: true
+		});
+		window.VideotecaStore.saveResource(resourceId, { isHidden: true });
+		window.history.replaceState(null, "", `recurso.html?recurso=${encodeURIComponent(resourceId)}&nuevo=1`);
+	} else if (isCreatingResource) {
+		resourceId = selectedId;
+	}
 	const resourceTitle = document.querySelector("#resource-title");
 	const resourceDescription = document.querySelector("#resource-description");
 	const resourcePlayer = document.querySelector("#resource-player");
@@ -38,7 +57,7 @@
 	const commentCount = document.querySelector("#comment-count");
 	const addDocumentDialog = document.querySelector("#add-document-dialog");
 	const addDocumentForm = document.querySelector("#add-document-form");
-	let isEditing = false;
+	let isEditing = isCreatingResource;
 	let editingPopupId = null;
 	let visiblePopupIds = "";
 	let pausedPopupId = "";
@@ -340,6 +359,13 @@
 		videoEmbed.removeAttribute("src");
 		videoEmbed.hidden = true;
 		resourcePlayer.hidden = false;
+		if (!resource.videoBlobId && !resource.videoUrl.trim()) {
+			resourcePlayer.removeAttribute("src");
+			resourcePlayer.load();
+			videoSourceStatus.textContent = "Sin video adjunto";
+			updateDurationAvailability();
+			return;
+		}
 
 		if (resource.videoBlobId) {
 			try {
@@ -513,9 +539,49 @@
 		resourceDescription.contentEditable = String(isEditing);
 		resourceTitle.setAttribute("aria-readonly", String(!isEditing));
 		resourceDescription.setAttribute("aria-readonly", String(!isEditing));
-		document.querySelector("#edit-resource-button").textContent = isEditing ? "Terminar edición" : "Editar recurso";
+		document.body.classList.toggle("resource-creation-pending", isCreatingResource);
+		document.querySelector("#edit-resource-button").textContent = isCreatingResource ? "Crear recurso" : isEditing ? "Terminar edición" : "Editar recurso";
 		renderResource();
 		renderComments();
+	}
+
+	function finishResourceCreation() {
+		const title = resourceTitle.textContent.trim();
+		const description = resourceDescription.textContent.trim();
+		const resource = window.VideotecaStore.get().resources[resourceId];
+		if (!title) {
+			resourceSaveStatus.textContent = "Escribe el título del recurso para continuar.";
+			resourceTitle.focus();
+			return;
+		}
+		if (!description) {
+			resourceSaveStatus.textContent = "Escribe la descripción del recurso para continuar.";
+			resourceDescription.focus();
+			return;
+		}
+		if (!resource.videoBlobId && !resource.videoUrl.trim()) {
+			resourceSaveStatus.textContent = "Adjunta un video mediante URL o archivo para crear el recurso.";
+			return;
+		}
+		if (!resource.videoBlobId && resource.videoUrl.trim()) {
+			try {
+				resolveVideoUrl(resource.videoUrl);
+			} catch {
+				resourceSaveStatus.textContent = "La URL del video no es válida.";
+				return;
+			}
+		}
+
+		const duration = Number.isFinite(resourcePlayer.duration) && resourcePlayer.duration > 0
+			? `${Math.ceil(resourcePlayer.duration / 60)} min`
+			: resource.duration;
+		window.VideotecaStore.saveResource(resourceId, { title, description, duration, isDraft: false, isHidden: false });
+		window.VideotecaStore.setResourceHidden(resourceId, false);
+		isCreatingResource = false;
+		document.body.classList.remove("resource-creation-pending");
+		window.history.replaceState(null, "", `recurso.html?recurso=${encodeURIComponent(resourceId)}`);
+		setEditing(false);
+		resourceSaveStatus.textContent = "Recurso creado. Ya aparece en la asignatura.";
 	}
 
 	function setEditorAction(action) {
@@ -564,7 +630,10 @@
 		}
 	}
 
-	document.querySelector("#edit-resource-button").addEventListener("click", () => setEditing(!isEditing));
+	document.querySelector("#edit-resource-button").addEventListener("click", () => {
+		if (isCreatingResource) finishResourceCreation();
+		else setEditing(!isEditing);
+	});
 	document.querySelectorAll("[data-editor-action]").forEach((button) => {
 		button.addEventListener("click", () => setEditorAction(button.dataset.editorAction));
 	});
@@ -936,7 +1005,15 @@
 		commentInput.focus();
 	});
 
-	renderResource();
-	renderComments();
+	window.addEventListener("pagehide", () => {
+		if (isCreatingResource && window.VideotecaStore.get().resources[resourceId]?.isDraft) {
+			window.VideotecaStore.deleteResource(resourceId);
+		}
+	});
+	if (isCreatingResource) setEditing(true);
+	else {
+		renderResource();
+		renderComments();
+	}
 	setEditorAction(activeEditorAction);
 })();

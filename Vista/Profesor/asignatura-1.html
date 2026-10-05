@@ -186,7 +186,6 @@
 		.comments-section { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); }
 		.comment-count { color: var(--muted); font-size: 13px; }
 		.comment-form { margin-bottom: 26px; }
-		.comment-form label { display: block; margin-bottom: 8px; font-weight: 600; }
 		.comment-form textarea {
 			display: block;
 			width: 100%;
@@ -200,7 +199,7 @@
 			font: inherit;
 		}
 		.comment-form textarea:focus { outline: 2px solid #a3a39e; outline-offset: 1px; }
-		.comment-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+		.comment-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
 		.comment-submit {
 			padding: 9px 14px;
 			border: 1px solid #d6d6d3;
@@ -234,6 +233,26 @@
 		.comment-author { font-size: 13px; font-weight: 600; }
 		.comment-date { color: var(--muted); font-size: 12px; }
 		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
+		.comment-resource-mention { padding: 0; border: 0; background: transparent; color: #1769c2; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+		.comment-resource-mention:hover { color: #0e4e91; }
+		.comment-resource-mention:focus-visible { outline: 2px solid #1769c2; outline-offset: 2px; }
+		.resource-mention-menu { position: relative; }
+		.resource-mention-menu summary { padding: 8px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font-weight: 600; list-style: none; cursor: pointer; }
+		.resource-mention-menu summary::-webkit-details-marker { display: none; }
+		.resource-mention-panel { position: absolute; z-index: 4; bottom: calc(100% + 6px); left: 0; width: min(290px, calc(100vw - 60px)); max-height: 220px; overflow: auto; padding: 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.resource-mention-option { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+		.resource-mention-option:hover { background: var(--soft); }
+		.resource-mention-empty { display: block; padding: 9px 10px; color: var(--muted); font-size: 12px; }
+		.comment-inline-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
+		.comment-reply-toggle { padding: 0; border: 0; background: transparent; color: #555550; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+		.comment-reply-toggle:hover { color: var(--text); text-decoration: underline; }
+		.comment-reply-form { display: grid; gap: 8px; margin-top: 10px; }
+		.comment-reply-form[hidden] { display: none; }
+		.comment-reply-form textarea { width: 100%; min-height: 66px; padding: 9px 10px; resize: vertical; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; }
+		.comment-replies { margin: 12px 0 0 17px; padding-left: 14px; border-left: 2px solid var(--line); }
+		.comment-reply { padding: 12px 0; border-bottom: 0; }
+		.resource-card.resource-mentioned { outline: 3px solid #1769c2; outline-offset: 3px; animation: resource-mentioned 1.2s ease-in-out 2; }
+		@keyframes resource-mentioned { 50% { outline-color: #75b6ff; outline-offset: 5px; } }
 		.course-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 		.add-resource-btn, .cover-change-btn {
 			padding: 9px 12px;
@@ -363,9 +382,12 @@
 				</div>
 
 				<form class="comment-form" id="comment-form">
-					<label for="comment-input">Comparte una pregunta o comentario</label>
-					<textarea id="comment-input" name="comment" placeholder="Escribe tu comentario..." required></textarea>
+					<textarea id="comment-input" name="comment" aria-label="Comentario de la asignatura" placeholder="Escribe tu comentario..." required></textarea>
 					<div class="comment-actions">
+						<details class="resource-mention-menu">
+							<summary>Mencionar recurso</summary>
+							<div class="resource-mention-panel" id="mention-resource-options"></div>
+						</details>
 						<button class="comment-submit" type="submit">Publicar comentario</button>
 					</div>
 				</form>
@@ -373,22 +395,6 @@
 				<div class="comment-list" id="comment-list" aria-live="polite"></div>
 			</section>
 
-			<dialog class="editor-dialog" id="add-resource-dialog">
-				<h2>Añadir recurso</h2>
-				<form class="editor-form" id="add-resource-form">
-					<div class="editor-field"><label for="new-resource-title">Título</label><input id="new-resource-title" name="title" required></div>
-					<div class="editor-field"><label for="new-resource-unit">Unidad</label><input id="new-resource-unit" name="unit" value="Unidad 1" required></div>
-					<div class="editor-field"><label for="new-resource-duration">Duración</label><input id="new-resource-duration" name="duration" placeholder="10 min" required></div>
-					<div class="editor-field"><label for="new-resource-description">Descripción</label><textarea id="new-resource-description" name="description" required></textarea></div>
-					<div class="editor-field"><label for="new-resource-thumbnail">URL de miniatura</label><input id="new-resource-thumbnail" name="thumbnailUrl" type="url" required></div>
-					<div class="editor-field"><label for="new-resource-video">URL de video</label><input id="new-resource-video" name="videoUrl" type="url" required></div>
-					<div class="editor-field"><label for="new-resource-material-title">Material asociado</label><input id="new-resource-material-title" name="materialTitle" required></div>
-					<div class="editor-field"><label for="new-resource-material-format">Formato</label><input id="new-resource-material-format" name="materialFormat" value="PDF" required></div>
-					<div class="editor-field"><label for="new-resource-material-description">Descripción del material</label><textarea id="new-resource-material-description" name="materialDescription" required></textarea></div>
-					<div class="editor-field"><label for="new-resource-material-url">URL del material</label><input id="new-resource-material-url" name="materialUrl" value="../../prueba.pdf" required></div>
-					<div class="editor-actions"><button type="button" id="cancel-add-resource">Cancelar</button><button type="submit">Añadir recurso</button></div>
-				</form>
-			</dialog>
 		</main>
 	</div>
 	<script src="editor-store.js"></script>
