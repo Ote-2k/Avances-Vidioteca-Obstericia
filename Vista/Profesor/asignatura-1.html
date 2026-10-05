@@ -128,39 +128,12 @@
 		}
 		.edit-course-btn:hover { background: #ffe6c4; }
 		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
-		.editor-dialog {
-			width: min(520px, calc(100% - 32px));
-			max-height: 90vh;
-			padding: 24px;
-			border: 1px solid var(--line);
-			border-radius: 4px;
-			background: var(--surface);
-			color: var(--text);
-		}
-		.editor-dialog::backdrop { background: rgba(20, 20, 20, .42); }
-		.editor-dialog h2 { margin: 0 0 20px; }
-		.editor-form { display: grid; gap: 14px; }
-		.editor-field label { display: block; margin-bottom: 6px; font-weight: 600; }
-		.editor-field input, .editor-field textarea {
-			width: 100%;
-			padding: 10px 11px;
-			border: 1px solid #d6d6d3;
-			border-radius: 4px;
-			background: #fff;
-			color: var(--text);
-			font: inherit;
-		}
-		.editor-field textarea { min-height: 84px; resize: vertical; }
-		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
-		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
 		.course-description { margin: 8px 0 30px; color: var(--muted); }
 		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 		h2 { margin: 0; font-size: 17px; font-weight: 600; }
 		.resource-count { color: var(--muted); font-size: 13px; }
 		.resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 		.resource-card {
-			display: block;
 			overflow: hidden;
 			background: var(--surface);
 			border: 1px solid var(--line);
@@ -170,7 +143,7 @@
 			transition: border-color .15s ease, transform .15s ease;
 		}
 		.resource-card:hover { border-color: #c9a77f; transform: translateY(-2px); }
-		.resource-card:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
+		.resource-open:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
 		.video-preview { position: relative; aspect-ratio: 16 / 9; background: var(--soft); }
 		.video-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
 		.play-mark {
@@ -261,6 +234,63 @@
 		.comment-author { font-size: 13px; font-weight: 600; }
 		.comment-date { color: var(--muted); font-size: 12px; }
 		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
+		.course-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+		.add-resource-btn, .cover-change-btn {
+			padding: 9px 12px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.add-resource-btn, .cover-change-btn { display: none; }
+		.course-cover-frame { position: relative; }
+		.course-cover-frame .course-cover { display: block; }
+		.cover-change-btn { position: absolute; top: 12px; right: 12px; }
+		body.editing .add-resource-btn, body.editing .cover-change-btn { display: inline-flex; }
+		body.editing .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
+		.cover-file-input { display: none; }
+		.resource-card { position: relative; }
+		.resource-open { display: block; color: inherit; text-decoration: none; }
+		.resource-menu { display: none; position: absolute; z-index: 2; top: 8px; right: 8px; }
+		body.editing .resource-menu { display: block; }
+		.resource-menu summary {
+			width: 36px;
+			height: 36px;
+			display: grid;
+			place-items: center;
+			border-radius: 4px;
+			background: rgba(255, 255, 255, .96);
+			color: var(--text);
+			font-size: 22px;
+			font-weight: 700;
+			line-height: 1;
+			list-style: none;
+			cursor: pointer;
+		}
+		.resource-menu summary::-webkit-details-marker { display: none; }
+		.resource-menu-panel { position: absolute; top: 40px; right: 0; width: 174px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.resource-menu-panel button, .comment-remove { width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+		.resource-menu-panel button:hover, .comment-remove:hover { background: var(--soft); }
+		.resource-menu-panel .delete-resource, .comment-remove { color: #8e3028; }
+		.resource-card.is-hidden { opacity: .58; border-style: dashed; }
+		.hidden-badge { display: none; }
+		body.editing .resource-card.is-hidden .hidden-badge { display: block; position: absolute; left: 8px; top: 8px; padding: 5px 8px; border-radius: 3px; background: var(--text); color: #fff; font-size: 11px; }
+		.comment-layout { min-width: 0; }
+		.comment-remove { display: none; width: auto; margin-top: 8px; padding-left: 0; font-size: 12px; }
+		body.editing .comment-remove { display: inline-block; }
+		.editor-dialog { width: min(560px, calc(100% - 32px)); max-height: 90vh; overflow: auto; padding: 24px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--text); }
+		.editor-dialog::backdrop { background: rgba(20, 20, 20, .42); }
+		.editor-dialog h2 { margin: 0 0 20px; }
+		.editor-form { display: grid; gap: 14px; }
+		.editor-field label { display: block; margin-bottom: 6px; font-weight: 600; }
+		.editor-field input, .editor-field textarea { width: 100%; padding: 10px 11px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.editor-field textarea { min-height: 84px; resize: vertical; }
+		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
 
 		@media (max-width: 720px) {
 			.topbar { height: 58px; padding: 0 18px; }
@@ -303,12 +333,19 @@
 		</aside>
 
 		<main>
-			<img class="course-cover" id="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
-			<div class="course-header">
-				<h1 id="course-title">Asignatura 1</h1>
-				<button type="button" class="edit-course-btn" id="edit-course-button">Editar asignatura</button>
+			<div class="course-cover-frame">
+				<img class="course-cover" id="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
+				<button class="cover-change-btn" id="change-cover-button" type="button">Cambiar foto</button>
+				<input class="cover-file-input" id="cover-file-input" type="file" accept="image/*">
 			</div>
-			<p class="course-description" id="course-description">Recursos y contenidos disponibles para esta asignatura.</p>
+			<div class="course-header">
+				<h1 class="editable" id="course-title" aria-label="Nombre de la asignatura">Asignatura 1</h1>
+				<div class="course-actions">
+					<button type="button" class="edit-course-btn" id="edit-course-button">Editar asignatura</button>
+					<button type="button" class="add-resource-btn" id="add-resource-button">+ Añadir recurso</button>
+				</div>
+			</div>
+			<p class="course-description editable" id="course-description" aria-label="Descripción de la asignatura">Recursos y contenidos disponibles para esta asignatura.</p>
 			<p class="save-status" id="course-save-status" role="status" aria-live="polite"></p>
 
 			<section aria-labelledby="resources-title">
@@ -333,186 +370,28 @@
 					</div>
 				</form>
 
-				<div class="comment-list" id="comment-list" aria-live="polite">
-					<article class="comment">
-						<span class="comment-avatar" aria-hidden="true">MP</span>
-						<div>
-							<div class="comment-header">
-								<span class="comment-author">María P.</span>
-								<time class="comment-date">Hace 2 horas</time>
-							</div>
-							<p class="comment-text">¿La guía de estudio incluye los puntos clave del primer video?</p>
-						</div>
-					</article>
-					<article class="comment">
-						<span class="comment-avatar" aria-hidden="true">JR</span>
-						<div>
-							<div class="comment-header">
-								<span class="comment-author">Javier R.</span>
-								<time class="comment-date">Ayer</time>
-							</div>
-							<p class="comment-text">El material complementario me ayudó a repasar la unidad.</p>
-						</div>
-					</article>
-				</div>
+				<div class="comment-list" id="comment-list" aria-live="polite"></div>
 			</section>
 
-			<dialog class="editor-dialog" id="course-editor">
-				<h2>Editar asignatura</h2>
-				<form class="editor-form" id="course-edit-form">
-					<div class="editor-field">
-						<label for="course-title-input">Nombre</label>
-						<input id="course-title-input" name="title" required>
-					</div>
-					<div class="editor-field">
-						<label for="course-description-input">Descripción</label>
-						<textarea id="course-description-input" name="description" required></textarea>
-					</div>
-					<div class="editor-field">
-						<label for="course-cover-input">URL de la portada</label>
-						<input id="course-cover-input" name="coverUrl" type="url" required>
-					</div>
-					<div class="editor-actions">
-						<button type="button" id="cancel-course-edit">Cancelar</button>
-						<button type="submit">Guardar cambios</button>
-					</div>
+			<dialog class="editor-dialog" id="add-resource-dialog">
+				<h2>Añadir recurso</h2>
+				<form class="editor-form" id="add-resource-form">
+					<div class="editor-field"><label for="new-resource-title">Título</label><input id="new-resource-title" name="title" required></div>
+					<div class="editor-field"><label for="new-resource-unit">Unidad</label><input id="new-resource-unit" name="unit" value="Unidad 1" required></div>
+					<div class="editor-field"><label for="new-resource-duration">Duración</label><input id="new-resource-duration" name="duration" placeholder="10 min" required></div>
+					<div class="editor-field"><label for="new-resource-description">Descripción</label><textarea id="new-resource-description" name="description" required></textarea></div>
+					<div class="editor-field"><label for="new-resource-thumbnail">URL de miniatura</label><input id="new-resource-thumbnail" name="thumbnailUrl" type="url" required></div>
+					<div class="editor-field"><label for="new-resource-video">URL de video</label><input id="new-resource-video" name="videoUrl" type="url" required></div>
+					<div class="editor-field"><label for="new-resource-material-title">Material asociado</label><input id="new-resource-material-title" name="materialTitle" required></div>
+					<div class="editor-field"><label for="new-resource-material-format">Formato</label><input id="new-resource-material-format" name="materialFormat" value="PDF" required></div>
+					<div class="editor-field"><label for="new-resource-material-description">Descripción del material</label><textarea id="new-resource-material-description" name="materialDescription" required></textarea></div>
+					<div class="editor-field"><label for="new-resource-material-url">URL del material</label><input id="new-resource-material-url" name="materialUrl" value="../../prueba.pdf" required></div>
+					<div class="editor-actions"><button type="button" id="cancel-add-resource">Cancelar</button><button type="submit">Añadir recurso</button></div>
 				</form>
 			</dialog>
 		</main>
 	</div>
 	<script src="editor-store.js"></script>
-	<script>
-		const courseEditor = document.querySelector("#course-editor");
-		const courseEditForm = document.querySelector("#course-edit-form");
-		const resourceGrid = document.querySelector("#resource-grid");
-		const resourceCount = document.querySelector("#resource-count");
-
-		function renderCourse() {
-			const data = window.VideotecaStore.get();
-			document.title = `${data.course.title} | Videoteca`;
-			document.querySelector("#course-title").textContent = data.course.title;
-			document.querySelector("#course-nav-title").textContent = data.course.title;
-			document.querySelector("#course-description").textContent = data.course.description;
-			const cover = document.querySelector("#course-cover");
-			cover.src = data.course.coverUrl;
-			cover.alt = `Portada de ${data.course.title}`;
-
-			const resources = Object.entries(data.resources);
-			const materialCount = resources.reduce((total, [, resource]) => total + resource.materials.length, 0);
-			resourceCount.textContent = `${resources.length} videos · ${materialCount} materiales de apoyo`;
-			resourceGrid.replaceChildren();
-
-			resources.forEach(([id, resource]) => {
-				const card = document.createElement("a");
-				card.className = "resource-card";
-				card.href = `recurso.html?recurso=${encodeURIComponent(id)}`;
-
-				const preview = document.createElement("div");
-				preview.className = "video-preview";
-				const image = document.createElement("img");
-				image.src = resource.thumbnailUrl;
-				image.alt = `Miniatura de ${resource.title}`;
-				const playMark = document.createElement("span");
-				playMark.className = "play-mark";
-				playMark.setAttribute("aria-hidden", "true");
-				const duration = document.createElement("span");
-				duration.className = "duration";
-				duration.textContent = resource.duration;
-				preview.append(image, playMark, duration);
-
-				const content = document.createElement("div");
-				content.className = "resource-content";
-				const title = document.createElement("h3");
-				title.className = "resource-title";
-				title.textContent = resource.title;
-				const meta = document.createElement("p");
-				meta.className = "resource-meta";
-				meta.textContent = `${resource.unit} · Video educativo`;
-				content.append(title, meta);
-
-				const material = resource.materials[0];
-				if (material) {
-					const support = document.createElement("div");
-					support.className = "support-info";
-					const label = document.createElement("p");
-					label.className = "support-label";
-					label.textContent = "Material asociado";
-					const detail = document.createElement("p");
-					detail.className = "support-detail";
-					detail.textContent = `${material.title} · ${material.format}`;
-					support.append(label, detail);
-					content.append(support);
-				}
-
-				card.append(preview, content);
-				resourceGrid.append(card);
-			});
-		}
-
-		document.querySelector("#edit-course-button").addEventListener("click", () => {
-			const course = window.VideotecaStore.get().course;
-			courseEditForm.elements.title.value = course.title;
-			courseEditForm.elements.description.value = course.description;
-			courseEditForm.elements.coverUrl.value = course.coverUrl;
-			courseEditor.showModal();
-		});
-
-		document.querySelector("#cancel-course-edit").addEventListener("click", () => courseEditor.close());
-		courseEditForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			const formData = new FormData(courseEditForm);
-			window.VideotecaStore.saveCourse({
-				title: formData.get("title").trim(),
-				description: formData.get("description").trim(),
-				coverUrl: formData.get("coverUrl").trim()
-			});
-			renderCourse();
-			courseEditor.close();
-			document.querySelector("#course-save-status").textContent = "Cambios guardados en este navegador.";
-		});
-
-		renderCourse();
-
-		const commentForm = document.querySelector("#comment-form");
-		const commentInput = document.querySelector("#comment-input");
-		const commentList = document.querySelector("#comment-list");
-		const commentCount = document.querySelector("#comment-count");
-
-		commentForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			const text = commentInput.value.trim();
-			if (!text) return;
-
-			const comment = document.createElement("article");
-			comment.className = "comment";
-			const avatar = document.createElement("span");
-			avatar.className = "comment-avatar";
-			avatar.setAttribute("aria-hidden", "true");
-			avatar.textContent = "T";
-
-			const content = document.createElement("div");
-			const header = document.createElement("div");
-			header.className = "comment-header";
-			const author = document.createElement("span");
-			author.className = "comment-author";
-			author.textContent = "Tú";
-			const date = document.createElement("time");
-			date.className = "comment-date";
-			date.textContent = "Ahora";
-			header.append(author, date);
-
-			const message = document.createElement("p");
-			message.className = "comment-text";
-			message.textContent = text;
-			content.append(header, message);
-			comment.append(avatar, content);
-			commentList.prepend(comment);
-
-			const total = commentList.querySelectorAll(".comment").length;
-			commentCount.textContent = `${total} ${total === 1 ? "comentario" : "comentarios"}`;
-			commentForm.reset();
-			commentInput.focus();
-		});
-	</script>
+	<script src="asignatura-editor.js"></script>
 </body>
 </html>

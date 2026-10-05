@@ -92,13 +92,6 @@
 		.course-list li[aria-current="page"] a { background: var(--soft); color: var(--text); font-weight: 700; }
 
 		main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 36px 40px 48px; }
-		.back-link {
-			display: inline-block;
-			margin-bottom: 20px;
-			color: #555550;
-			text-decoration: underline;
-			text-underline-offset: 3px;
-		}
 		.resource-meta { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
 		.resource-heading {
 			display: flex;
@@ -122,7 +115,26 @@
 		.resource-action-edit { border-color: #f0c28f; background: #fff1df; }
 		.resource-action:hover { background: var(--soft); }
 		.resource-action-edit:hover { background: #ffe6c4; }
-		.video-player {
+		body.editing-resource .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
+		.video-attachment { margin: -6px 0 14px; }
+		.video-attachment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+		.video-attachment-heading h2 { font-size: 14px; }
+		.video-source-status { color: var(--muted); font-size: 12px; }
+		.video-source-editor { display: none; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+		body.editing-resource .video-source-editor { display: block; }
+		.source-mode { display: inline-flex; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+		.source-mode label { position: relative; padding: 8px 12px; background: var(--surface); color: #555550; cursor: pointer; }
+		.source-mode label:has(input:checked) { background: var(--soft); color: var(--text); font-weight: 600; }
+		.source-mode input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+		.source-panel[hidden] { display: none; }
+		.source-row { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+		.source-url-field { flex: 1 1 300px; }
+		.source-panel .editor-field input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.source-panel button, .video-file-button { padding: 9px 12px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+		.source-panel button:hover, .video-file-button:hover { background: var(--soft); }
+		#replace-video-input { display: none; }
+		.video-hint { margin: 9px 0 0; color: var(--muted); font-size: 12px; }
+		.video-player, .video-embed {
 			display: block;
 			width: 100%;
 			max-height: 620px;
@@ -130,7 +142,55 @@
 			background: #181818;
 			border-radius: 4px;
 		}
+		.video-embed { border: 0; }
+		.video-player[hidden], .video-embed[hidden] { display: none; }
+		.media-container { position: relative; width: 100%; overflow: hidden; background: #181818; }
+		.video-overlays { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+		.video-popup {
+			position: absolute;
+			width: min(250px, 58%);
+			max-height: 42%;
+			overflow: auto;
+			padding: 11px 13px;
+			border: 1px solid rgba(255, 255, 255, .88);
+			border-radius: 4px;
+			background: rgba(255, 255, 255, .96);
+			color: var(--text);
+			text-align: left;
+			transform: translate(-50%, -50%);
+			pointer-events: auto;
+			cursor: pointer;
+		}
+		.video-popup-title { display: block; margin-bottom: 4px; font-weight: 700; }
+		.video-popup-text { display: block; color: #555550; font-size: 12px; line-height: 1.4; }
+		.video-popup-document { display: block; margin-top: 7px; color: #555550; font-size: 11px; text-decoration: underline; }
+		.popup-editor-section { display: none; margin: 18px 0 26px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+		body.editing-resource .popup-editor-section { display: block; }
+		.popup-editor-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+		.popup-editor-header h2 { margin: 0; }
+		.popup-add-button { padding: 8px 11px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+		.popup-list { display: grid; gap: 8px; }
+		.popup-editor-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; }
+		.popup-editor-info { min-width: 0; }
+		.popup-editor-info strong, .popup-editor-info span { display: block; overflow-wrap: anywhere; }
+		.popup-editor-info span { margin-top: 3px; color: var(--muted); font-size: 12px; }
+		.popup-editor-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+		.popup-editor-actions button { padding: 7px 9px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+		.popup-editor-actions .popup-delete { color: #8e3028; }
+		.popup-editor-notice { display: none; margin: 0 0 12px; color: #805321; font-size: 12px; }
+		.popup-editor-notice.visible { display: block; }
+		.popup-editor-hint { margin: -4px 0 12px; color: var(--muted); font-size: 12px; }
+		.popup-form { display: grid; gap: 13px; }
+		.popup-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+		.popup-form input, .popup-form textarea, .popup-form select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.popup-form textarea { min-height: 78px; resize: vertical; }
+		.popup-form input[type="range"] { padding: 0; }
+		.popup-position-output { color: var(--muted); font-size: 12px; }
+		.document-highlight { animation: document-highlight 1.1s ease-in-out 2; }
+		@keyframes document-highlight { 50% { outline: 3px solid #c9a77f; outline-offset: 3px; background: #fffaf3; } }
 		.resource-description { margin: 14px 0 28px; color: #555550; line-height: 1.6; }
+		.add-document-button { padding: 9px 12px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+		.add-document-button:hover { background: var(--soft); }
 		.support-section { margin-top: 28px; }
 		.section-heading {
 			display: flex;
@@ -142,8 +202,11 @@
 		h2 { margin: 0; font-size: 18px; font-weight: 600; }
 		.section-count { color: var(--muted); font-size: 13px; }
 		.material-list { display: grid; gap: 10px; }
+		.material-row { position: relative; display: flex; align-items: stretch; gap: 8px; }
 		.material-card {
 			display: block;
+			flex: 1;
+			min-width: 0;
 			padding: 16px 18px;
 			background: var(--surface);
 			border: 1px solid var(--line);
@@ -153,10 +216,35 @@
 		}
 		.material-card:hover { border-color: #c9a77f; }
 		.material-card:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
+		.material-card.document-highlight { outline: 3px solid #c9a77f; outline-offset: 3px; background: #fffaf3; }
 		.material-card h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
 		.material-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+		.document-menu { display: none; position: relative; flex: 0 0 40px; }
+		body.editing-resource .document-menu { display: block; }
+		.document-menu summary {
+			width: 40px;
+			height: 100%;
+			min-height: 42px;
+			display: grid;
+			place-items: center;
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			background: var(--surface);
+			font-size: 22px;
+			font-weight: 700;
+			line-height: 1;
+			list-style: none;
+			cursor: pointer;
+		}
+		.document-menu summary::-webkit-details-marker { display: none; }
+		.document-menu-panel { position: absolute; z-index: 3; top: 100%; right: 0; width: 174px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.remove-document { width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: #8e3028; font: inherit; text-align: left; cursor: pointer; }
+		.remove-document:hover { background: var(--soft); }
+		.add-document-button { display: none; }
+		body.editing-resource .add-document-button { display: inline-block; }
 		.comments-section { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); }
 		.comment-count { color: var(--muted); font-size: 13px; }
+		.comment-tools { display: flex; align-items: center; gap: 10px; }
 		.comment-form { margin-bottom: 26px; }
 		.comment-form label { display: block; margin-bottom: 8px; font-weight: 600; }
 		.comment-form textarea {
@@ -206,6 +294,9 @@
 		.comment-author { font-size: 13px; font-weight: 600; }
 		.comment-date { color: var(--muted); font-size: 12px; }
 		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
+		.comment-layout { min-width: 0; }
+		.comment-remove { display: none; margin-top: 8px; padding: 0; border: 0; background: transparent; color: #8e3028; font: inherit; font-size: 12px; cursor: pointer; }
+		body.editing-resource .comment-remove { display: inline-block; }
 		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
 		.editor-dialog {
 			width: min(560px, calc(100% - 32px));
@@ -235,10 +326,17 @@
 		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
+		@media (max-width: 560px) {
+			.popup-form-grid { grid-template-columns: 1fr; }
+			.popup-editor-row { align-items: flex-start; flex-direction: column; }
+			.popup-editor-actions { width: 100%; }
+			.video-popup { width: min(210px, 70%); padding: 8px 10px; }
+		}
 		@media (max-width: 720px) {
 			.topbar { height: 58px; padding: 0 18px; }
 			.layout { min-height: calc(100vh - 58px); flex-direction: column; }
 			.sidebar { width: 100%; flex-basis: auto; padding: 18px; border-right: 0; border-bottom: 1px solid var(--line); }
+			.profile > span:first-child { display: none; }
 			main { padding: 24px 18px 36px; }
 			h1 { font-size: 23px; }
 			.resource-heading { align-items: flex-start; flex-direction: column; }
@@ -272,25 +370,67 @@
 		</aside>
 
 		<main>
-			<a class="back-link" href="asignatura-1.html">← Volver a Asignatura 1</a>
-			<p class="resource-meta" id="resource-meta"></p>
 			<div class="resource-heading">
-				<h1 id="resource-title">Recurso de aprendizaje</h1>
+				<h1 class="editable" id="resource-title" aria-label="Título del recurso">Recurso de aprendizaje</h1>
 				<div class="resource-actions">
-					<button type="button" class="resource-action resource-action-edit" id="edit-resource-button">Editar recurso</button>
+					<button type="button" class="resource-action" id="edit-resource-button">Editar recurso</button>
 				</div>
 			</div>
-			<video class="video-player" id="resource-player" controls preload="metadata" poster="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&amp;fit=crop&amp;w=1280&amp;q=80">
-				<source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
-				Tu navegador no permite reproducir este video.
-			</video>
-			<p class="resource-description" id="resource-description"></p>
+			<section class="video-attachment" aria-labelledby="video-attachment-title">
+				<div class="video-attachment-heading">
+					<h2 id="video-attachment-title">Video adjunto</h2>
+					<span class="video-source-status" id="video-source-status"></span>
+				</div>
+				<div class="video-source-editor">
+					<div class="source-mode" role="group" aria-label="Tipo de video adjunto">
+						<label><input type="radio" name="video-source-mode" value="url" checked> URL</label>
+						<label><input type="radio" name="video-source-mode" value="file"> Archivo del equipo</label>
+					</div>
+					<div class="source-panel" id="url-source-panel">
+						<div class="source-row">
+							<div class="editor-field source-url-field">
+								<label for="video-url-input">URL de YouTube, Drive o video directo</label>
+								<input id="video-url-input" type="text" autocomplete="url" placeholder="https://...">
+							</div>
+							<button type="button" id="save-video-url-button">Adjuntar URL</button>
+							<button type="button" id="use-sample-video-button">Usar video de prueba</button>
+						</div>
+					</div>
+					<div class="source-panel" id="file-source-panel" hidden>
+						<div class="source-row">
+							<input id="replace-video-input" type="file" accept="video/mp4,video/webm,video/ogg">
+							<label class="video-file-button" for="replace-video-input">Elegir y subir video</label>
+						</div>
+						<p class="video-hint">El archivo se guarda en este navegador para este prototipo.</p>
+					</div>
+				</div>
+			</section>
+			<div class="media-container">
+				<video class="video-player" id="resource-player" controls preload="metadata"></video>
+				<iframe class="video-embed" id="video-embed" title="Video educativo adjunto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen hidden></iframe>
+				<div class="video-overlays" id="video-overlays" aria-live="polite"></div>
+			</div>
+			<p class="resource-meta" id="resource-meta"></p>
+			<p class="resource-description editable" id="resource-description" aria-label="Descripción del recurso"></p>
 			<p class="save-status" id="resource-save-status" role="status" aria-live="polite"></p>
+
+			<section class="popup-editor-section" aria-labelledby="popup-editor-title">
+				<div class="popup-editor-header">
+					<h2 id="popup-editor-title">Pop-ups del video</h2>
+					<button class="popup-add-button" id="add-popup-button" type="button">+ Añadir pop-up</button>
+				</div>
+				<p class="popup-editor-hint">Cada aviso aparece durante 5 segundos a partir del timestamp elegido.</p>
+				<p class="popup-editor-notice" id="popup-editor-notice">Los pop-ups sincronizados requieren un archivo local o una URL de video directa.</p>
+				<div class="popup-list" id="popup-list"></div>
+			</section>
 
 			<section class="support-section" aria-labelledby="materials-title">
 				<div class="section-heading">
 					<h2 id="materials-title">Documentos y material complementario</h2>
-					<span class="section-count" id="materials-count"></span>
+					<div class="documents-actions">
+						<span class="section-count" id="materials-count"></span>
+						<button class="add-document-button" id="add-document-button" type="button">+ Añadir documento</button>
+					</div>
 				</div>
 				<div class="material-list" id="materials-list"></div>
 			</section>
@@ -298,7 +438,7 @@
 			<section class="comments-section" aria-labelledby="comments-title">
 				<div class="section-heading">
 					<h2 id="comments-title">Comentarios del recurso</h2>
-					<span class="comment-count" id="comment-count">2 comentarios</span>
+					<span class="comment-count" id="comment-count"></span>
 				</div>
 
 				<form class="comment-form" id="comment-form">
@@ -308,65 +448,47 @@
 					</div>
 				</form>
 
-				<div class="comment-list" id="comment-list" aria-live="polite">
-					<article class="comment">
-						<span class="comment-avatar" aria-hidden="true">MP</span>
-						<div>
-							<div class="comment-header">
-								<span class="comment-author">María P.</span>
-								<time class="comment-date">Hace 2 horas</time>
-							</div>
-							<p class="comment-text">¿Podrías explicar un poco más este punto en la próxima clase?</p>
-						</div>
-					</article>
-					<article class="comment">
-						<span class="comment-avatar" aria-hidden="true">JR</span>
-						<div>
-							<div class="comment-header">
-								<span class="comment-author">Javier R.</span>
-								<time class="comment-date">Ayer</time>
-							</div>
-							<p class="comment-text">Gracias, el material de apoyo me ayudó a entender mejor el tema.</p>
-						</div>
-					</article>
-				</div>
+				<div class="comment-list" id="comment-list" aria-live="polite"></div>
 			</section>
 
-			<dialog class="editor-dialog" id="resource-editor">
-				<h2>Editar recurso</h2>
-				<form class="editor-form" id="resource-edit-form">
-					<div class="editor-field">
-						<label for="resource-title-input">Título</label>
-						<input id="resource-title-input" name="title" required>
+			<dialog class="editor-dialog" id="add-document-dialog">
+				<h2>Añadir documento</h2>
+				<form class="editor-form" id="add-document-form">
+					<div class="editor-field"><label for="document-title-input">Nombre del documento</label><input id="document-title-input" name="title" required></div>
+					<div class="editor-field"><label for="document-format-input">Formato</label><input id="document-format-input" name="format" value="PDF" required></div>
+					<div class="editor-field"><label for="document-description-input">Descripción</label><textarea id="document-description-input" name="description" required></textarea></div>
+					<div class="editor-field"><label for="document-url-input">Ruta o URL</label><input id="document-url-input" name="url" type="text" value="../../prueba.pdf" required></div>
+					<div class="editor-actions"><button type="button" id="cancel-add-document">Cancelar</button><button type="submit">Añadir documento</button></div>
+				</form>
+			</dialog>
+
+			<dialog class="editor-dialog" id="popup-dialog">
+				<h2 id="popup-dialog-title">Añadir pop-up</h2>
+				<form class="popup-form" id="popup-form">
+					<div class="popup-form-grid">
+						<div class="editor-field"><label for="popup-time-input">Aparece en (segundos)</label><input id="popup-time-input" name="time" type="number" min="0" step="0.1" required></div>
+						<div class="editor-field"><label for="popup-title-input">Título</label><input id="popup-title-input" name="title" required></div>
+					</div>
+					<div class="editor-field"><label for="popup-message-input">Información emergente</label><textarea id="popup-message-input" name="message" required></textarea></div>
+					<div class="popup-form-grid">
+						<div class="editor-field">
+							<label for="popup-x-input">Posición horizontal</label>
+							<input id="popup-x-input" name="x" type="range" min="8" max="92" value="72">
+							<output class="popup-position-output" id="popup-x-output" for="popup-x-input">72%</output>
+						</div>
+						<div class="editor-field">
+							<label for="popup-y-input">Posición vertical</label>
+							<input id="popup-y-input" name="y" type="range" min="12" max="88" value="55">
+							<output class="popup-position-output" id="popup-y-output" for="popup-y-input">55%</output>
+						</div>
 					</div>
 					<div class="editor-field">
-						<label for="resource-unit-input">Unidad</label>
-						<input id="resource-unit-input" name="unit" required>
-					</div>
-					<div class="editor-field">
-						<label for="resource-duration-input">Duración</label>
-						<input id="resource-duration-input" name="duration" required>
-					</div>
-					<div class="editor-field">
-						<label for="resource-description-input">Descripción</label>
-						<textarea id="resource-description-input" name="description" required></textarea>
-					</div>
-					<div class="editor-field">
-						<label for="resource-thumbnail-input">URL de la miniatura</label>
-						<input id="resource-thumbnail-input" name="thumbnailUrl" type="url" required>
-					</div>
-					<div class="editor-field">
-						<label for="resource-video-input">URL del video</label>
-						<input id="resource-video-input" name="videoUrl" type="url" required>
-					</div>
-					<div class="editor-field">
-						<label for="resource-materials-input">Material asociado</label>
-						<textarea class="materials-input" id="resource-materials-input" name="materials" aria-describedby="materials-hint"></textarea>
-						<p class="field-hint" id="materials-hint">Un material por línea: título | formato | descripción | URL</p>
+						<label for="popup-document-input">Documento que abrirá al pulsar</label>
+						<select id="popup-document-input" name="materialId" required></select>
 					</div>
 					<div class="editor-actions">
-						<button type="button" id="cancel-resource-edit">Cancelar</button>
-						<button type="submit">Guardar cambios</button>
+						<button type="button" id="cancel-popup-button">Cancelar</button>
+						<button type="submit">Guardar pop-up</button>
 					</div>
 				</form>
 			</dialog>
@@ -375,132 +497,6 @@
 	</div>
 
 	<script src="editor-store.js"></script>
-	<script>
-		const selectedId = new URLSearchParams(window.location.search).get("recurso");
-		const availableResources = window.VideotecaStore.get().resources;
-		const resourceId = availableResources[selectedId] ? selectedId : "introduccion";
-		const resourceEditor = document.querySelector("#resource-editor");
-		const resourceEditForm = document.querySelector("#resource-edit-form");
-		const title = document.getElementById("resource-title");
-		const materialsList = document.getElementById("materials-list");
-		const resourcePlayer = document.querySelector("#resource-player");
-
-		function renderResource() {
-			const data = window.VideotecaStore.get();
-			const resource = data.resources[resourceId];
-			title.textContent = resource.title;
-			document.title = `${resource.title} | Videoteca`;
-			document.getElementById("resource-meta").textContent = `${resource.unit} · Video educativo · ${resource.duration}`;
-			document.getElementById("resource-description").textContent = resource.description;
-			document.querySelector(".back-link").textContent = `← Volver a ${data.course.title}`;
-			document.querySelector("#course-nav-title").textContent = data.course.title;
-			resourcePlayer.poster = resource.thumbnailUrl;
-			resourcePlayer.querySelector("source").src = resource.videoUrl;
-			resourcePlayer.load();
-			document.getElementById("materials-count").textContent = `${resource.materials.length} ${resource.materials.length === 1 ? "material" : "materiales"}`;
-			materialsList.replaceChildren();
-
-			resource.materials.forEach((material) => {
-				const card = document.createElement("a");
-				card.className = "material-card";
-				card.href = material.url || "../../prueba.pdf";
-				card.target = "_blank";
-				card.rel = "noopener";
-
-				const heading = document.createElement("h3");
-				heading.textContent = material.title;
-				const detail = document.createElement("p");
-				detail.textContent = `${material.format} · ${material.description}`;
-				card.append(heading, detail);
-				materialsList.append(card);
-			});
-		}
-
-		document.querySelector("#edit-resource-button").addEventListener("click", () => {
-			const resource = window.VideotecaStore.get().resources[resourceId];
-			resourceEditForm.elements.title.value = resource.title;
-			resourceEditForm.elements.unit.value = resource.unit;
-			resourceEditForm.elements.duration.value = resource.duration;
-			resourceEditForm.elements.description.value = resource.description;
-			resourceEditForm.elements.thumbnailUrl.value = resource.thumbnailUrl;
-			resourceEditForm.elements.videoUrl.value = resource.videoUrl;
-			resourceEditForm.elements.materials.value = resource.materials
-								.map((material) => `${material.title} | ${material.format} | ${material.description} | ${material.url || "../../prueba.pdf"}`)
-				.join("\n");
-			resourceEditor.showModal();
-		});
-
-		document.querySelector("#cancel-resource-edit").addEventListener("click", () => resourceEditor.close());
-		resourceEditForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			const formData = new FormData(resourceEditForm);
-			const materials = formData.get("materials")
-				.split(/\r?\n/)
-				.map((line) => line.split("|").map((part) => part.trim()))
-				.filter(([materialTitle]) => materialTitle)
-				.map(([materialTitle, format, description, url], index) => ({
-					title: materialTitle,
-					format: format || "Documento",
-					description: description || "Material de apoyo para el recurso.",
-					url: url || window.VideotecaStore.get().resources[resourceId].materials[index]?.url || "../../prueba.pdf"
-				}));
-
-			window.VideotecaStore.saveResource(resourceId, {
-				title: formData.get("title").trim(),
-				unit: formData.get("unit").trim(),
-				duration: formData.get("duration").trim(),
-				description: formData.get("description").trim(),
-				thumbnailUrl: formData.get("thumbnailUrl").trim(),
-				videoUrl: formData.get("videoUrl").trim(),
-				materials
-			});
-			renderResource();
-			resourceEditor.close();
-			document.querySelector("#resource-save-status").textContent = "Cambios guardados en este navegador.";
-		});
-
-		renderResource();
-
-		const commentForm = document.querySelector("#comment-form");
-		const commentInput = document.querySelector("#comment-input");
-		const commentList = document.querySelector("#comment-list");
-		const commentCount = document.querySelector("#comment-count");
-
-		commentForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			const text = commentInput.value.trim();
-			if (!text) return;
-
-			const comment = document.createElement("article");
-			comment.className = "comment";
-			const avatar = document.createElement("span");
-			avatar.className = "comment-avatar";
-			avatar.setAttribute("aria-hidden", "true");
-			avatar.textContent = "T";
-
-			const content = document.createElement("div");
-			const header = document.createElement("div");
-			header.className = "comment-header";
-			const author = document.createElement("span");
-			author.className = "comment-author";
-			author.textContent = "Tú";
-			const date = document.createElement("time");
-			date.className = "comment-date";
-			date.textContent = "Ahora";
-			header.append(author, date);
-
-			const message = document.createElement("p");
-			message.className = "comment-text";
-			message.textContent = text;
-			content.append(header, message);
-			comment.append(avatar, content);
-			commentList.prepend(comment);
-
-			const total = commentList.querySelectorAll(".comment").length;
-			commentCount.textContent = `${total} ${total === 1 ? "comentario" : "comentarios"}`;
-			commentForm.reset();
-			commentInput.focus();
-		});
-	</script>
+	<script src="recurso-editor.js"></script>
 </body>
 </html>
