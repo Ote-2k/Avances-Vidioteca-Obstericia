@@ -161,7 +161,18 @@
 		deleteComment(scope, id) {
 			const data = read();
 			if (!data.comments[scope]) return false;
-			data.comments[scope] = data.comments[scope].filter((comment) => comment.id !== id);
+			const removedIds = new Set([id]);
+			let foundReply;
+			do {
+				foundReply = false;
+				data.comments[scope].forEach((comment) => {
+					if (removedIds.has(comment.parentId) && !removedIds.has(comment.id)) {
+						removedIds.add(comment.id);
+						foundReply = true;
+					}
+				});
+			} while (foundReply);
+			data.comments[scope] = data.comments[scope].filter((comment) => !removedIds.has(comment.id));
 			write(data);
 			return true;
 		}

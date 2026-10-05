@@ -159,13 +159,33 @@
 			text-align: left;
 			transform: translate(-50%, -50%);
 			pointer-events: auto;
-			cursor: pointer;
 		}
 		.video-popup-title { display: block; margin-bottom: 4px; font-weight: 700; }
 		.video-popup-text { display: block; color: #555550; font-size: 12px; line-height: 1.4; }
-		.video-popup-document { display: block; margin-top: 7px; color: #555550; font-size: 11px; text-decoration: underline; }
+		.video-popup-image { display: block; width: auto; max-width: 100%; max-height: 120px; margin: 8px auto 0; object-fit: contain; }
+		.video-popup-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+		.video-popup-document, .video-popup-continue { padding: 0; border: 0; background: transparent; color: #555550; font: inherit; cursor: pointer; }
+		.video-popup-document { font-size: 11px; text-align: left; text-decoration: underline; }
+		.video-popup-continue { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 50%; background: #292927; color: #fff; font-size: 20px; line-height: 1; }
+		.video-popup-continue:hover { background: #555550; }
+		.video-highlight-circle { position: absolute; width: 58px; aspect-ratio: 1; border: 3px solid #e3362c; border-radius: 50%; background: rgba(227, 54, 44, .08); box-shadow: 0 0 0 2px rgba(255, 255, 255, .72); transform: translate(-50%, -50%); }
 		.popup-editor-section { display: none; margin: 18px 0 26px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-		body.editing-resource .popup-editor-section { display: block; }
+		.popup-editor-section[hidden], .duration-editor-section[hidden] { display: none; }
+		body.editing-resource .popup-editor-section:not([hidden]), body.editing-resource .duration-editor-section:not([hidden]) { display: block; }
+		.editor-action-menu { display: none; margin: 18px 0 0; }
+		body.editing-resource .editor-action-menu { display: block; }
+		.editor-action-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+		.editor-action-button { margin-bottom: -1px; padding: 10px 13px; border: 1px solid transparent; border-bottom: 2px solid transparent; background: transparent; color: #555550; font: inherit; font-weight: 600; cursor: pointer; }
+		.editor-action-button[aria-pressed="true"] { border-bottom-color: #9b6a31; color: var(--text); }
+		.editor-action-button:focus-visible { outline: 2px solid #9b6a31; outline-offset: 2px; }
+		.duration-editor-section { display: none; margin: 18px 0 26px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+		.duration-editor-section:not([hidden]) { display: block; }
+		.duration-editor-section h2 { margin-bottom: 8px; }
+		.duration-editor-hint, .duration-editor-status { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+		.duration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; }
+		.duration-form input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.duration-form button { justify-self: start; padding: 9px 12px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--soft); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+		.duration-form button:disabled { cursor: not-allowed; opacity: .55; }
 		.popup-editor-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 		.popup-editor-header h2 { margin: 0; }
 		.popup-add-button { padding: 8px 11px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
@@ -186,6 +206,16 @@
 		.popup-form textarea { min-height: 78px; resize: vertical; }
 		.popup-form input[type="range"] { padding: 0; }
 		.popup-position-output { color: var(--muted); font-size: 12px; }
+		.popup-option-toggle { display: flex; align-items: flex-start; gap: 9px; font-weight: 600; }
+		.popup-option-toggle input { width: 16px; height: 16px; flex: 0 0 16px; margin: 2px 0 0; accent-color: #9b6a31; }
+		.popup-option-toggle span { display: grid; gap: 3px; }
+		.popup-option-toggle small { color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
+		.popup-option-fields { display: grid; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 4px; }
+		.popup-option-fields[hidden] { display: none; }
+		.popup-image-preview { display: none; max-width: min(100%, 240px); max-height: 140px; object-fit: contain; }
+		.popup-image-preview.visible { display: block; }
+		.popup-image-remove { justify-self: start; padding: 7px 0; border: 0; background: transparent; color: #8e3028; font: inherit; cursor: pointer; }
+		.popup-image-note { margin: 0; color: var(--muted); font-size: 12px; }
 		.document-highlight { animation: document-highlight 1.1s ease-in-out 2; }
 		@keyframes document-highlight { 50% { outline: 3px solid #c9a77f; outline-offset: 3px; background: #fffaf3; } }
 		.resource-description { margin: 14px 0 28px; color: #555550; line-height: 1.6; }
@@ -295,6 +325,18 @@
 		.comment-date { color: var(--muted); font-size: 12px; }
 		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
 		.comment-layout { min-width: 0; }
+		.comment-timestamp-hint { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+		.comment-timestamp-link { color: #805321; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+		.comment-timestamp-link:hover { color: #5c3a17; }
+		.comment-inline-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+		.comment-reply-toggle { padding: 0; border: 0; background: transparent; color: #555550; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+		.comment-reply-toggle:hover { color: var(--text); text-decoration: underline; }
+		.comment-reply-form { display: grid; gap: 8px; margin-top: 10px; }
+		.comment-reply-form[hidden] { display: none; }
+		.comment-reply-form textarea { width: 100%; min-height: 66px; padding: 9px 10px; resize: vertical; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; }
+		.comment-reply-form .comment-submit { justify-self: end; padding: 7px 11px; font-size: 12px; }
+		.comment-replies { margin: 12px 0 0 17px; padding-left: 14px; border-left: 2px solid var(--line); }
+		.comment-reply { padding: 12px 0; border-bottom: 0; }
 		.comment-remove { display: none; margin-top: 8px; padding: 0; border: 0; background: transparent; color: #8e3028; font: inherit; font-size: 12px; cursor: pointer; }
 		body.editing-resource .comment-remove { display: inline-block; }
 		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
@@ -331,6 +373,7 @@
 			.popup-editor-row { align-items: flex-start; flex-direction: column; }
 			.popup-editor-actions { width: 100%; }
 			.video-popup { width: min(210px, 70%); padding: 8px 10px; }
+			.duration-form { grid-template-columns: 1fr; }
 		}
 		@media (max-width: 720px) {
 			.topbar { height: 58px; padding: 0 18px; }
@@ -410,19 +453,34 @@
 				<iframe class="video-embed" id="video-embed" title="Video educativo adjunto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen hidden></iframe>
 				<div class="video-overlays" id="video-overlays" aria-live="polite"></div>
 			</div>
+			<div class="editor-action-menu" aria-label="Herramientas de edición del video">
+				<div class="editor-action-list" role="group" aria-label="Acciones de edición">
+					<button class="editor-action-button" type="button" data-editor-action="popups" aria-pressed="true">Pop-ups</button>
+					<button class="editor-action-button" type="button" data-editor-action="duration" aria-pressed="false">Duración del video</button>
+				</div>
+				<section class="popup-editor-section" data-editor-panel="popups" aria-labelledby="popup-editor-title">
+					<div class="popup-editor-header">
+						<h2 id="popup-editor-title">Pop-ups del video</h2>
+						<button class="popup-add-button" id="add-popup-button" type="button">+ Añadir pop-up</button>
+					</div>
+					<p class="popup-editor-hint">Configura si cada aviso pausa el video o desaparece automáticamente.</p>
+					<p class="popup-editor-notice" id="popup-editor-notice">Los pop-ups sincronizados requieren un archivo local o una URL de video directa.</p>
+					<div class="popup-list" id="popup-list"></div>
+				</section>
+				<section class="duration-editor-section" data-editor-panel="duration" aria-labelledby="duration-editor-title" hidden>
+					<h2 id="duration-editor-title">Duración del video</h2>
+					<p class="duration-editor-hint">Define el tramo que se reproducirá. El archivo original no se modifica.</p>
+					<p class="duration-editor-status" id="duration-editor-status" role="status">Carga un video directo para configurar su duración.</p>
+					<form class="duration-form" id="duration-form">
+						<div class="editor-field"><label for="trim-start-input">Inicia en (segundos)</label><input id="trim-start-input" name="start" type="number" min="0" step="0.1" value="0" required></div>
+						<div class="editor-field"><label for="trim-end-input">Termina en (segundos)</label><input id="trim-end-input" name="end" type="number" min="0" step="0.1" placeholder="Final del video"></div>
+						<button type="submit" id="save-duration-button" disabled>Guardar duración</button>
+					</form>
+				</section>
+			</div>
 			<p class="resource-meta" id="resource-meta"></p>
 			<p class="resource-description editable" id="resource-description" aria-label="Descripción del recurso"></p>
 			<p class="save-status" id="resource-save-status" role="status" aria-live="polite"></p>
-
-			<section class="popup-editor-section" aria-labelledby="popup-editor-title">
-				<div class="popup-editor-header">
-					<h2 id="popup-editor-title">Pop-ups del video</h2>
-					<button class="popup-add-button" id="add-popup-button" type="button">+ Añadir pop-up</button>
-				</div>
-				<p class="popup-editor-hint">Cada aviso aparece durante 5 segundos a partir del timestamp elegido.</p>
-				<p class="popup-editor-notice" id="popup-editor-notice">Los pop-ups sincronizados requieren un archivo local o una URL de video directa.</p>
-				<div class="popup-list" id="popup-list"></div>
-			</section>
 
 			<section class="support-section" aria-labelledby="materials-title">
 				<div class="section-heading">
@@ -443,6 +501,7 @@
 
 				<form class="comment-form" id="comment-form">
 					<textarea id="comment-input" name="comment" aria-label="Escribe tu comentario" placeholder="Escribe tu comentario..." required></textarea>
+					<p class="comment-timestamp-hint">Escribe un momento como 0:09 para enlazarlo con el video.</p>
 					<div class="comment-actions">
 						<button class="comment-submit" type="submit">Publicar comentario</button>
 					</div>
@@ -470,6 +529,14 @@
 						<div class="editor-field"><label for="popup-title-input">Título</label><input id="popup-title-input" name="title" required></div>
 					</div>
 					<div class="editor-field"><label for="popup-message-input">Información emergente</label><textarea id="popup-message-input" name="message" required></textarea></div>
+					<label class="popup-option-toggle">
+						<input id="popup-pause-input" name="pauseVideo" type="checkbox">
+						<span>Pausar el video hasta que continúe el usuario<small>El pop-up incluirá una flecha para reanudar la reproducción.</small></span>
+					</label>
+					<div class="editor-field" id="popup-dismiss-field">
+						<label for="popup-dismiss-input">Desaparece después de (segundos)</label>
+						<input id="popup-dismiss-input" name="dismissAfter" type="number" min="1" max="60" step="1" value="5" required>
+					</div>
 					<div class="popup-form-grid">
 						<div class="editor-field">
 							<label for="popup-x-input">Posición horizontal</label>
@@ -482,14 +549,33 @@
 							<output class="popup-position-output" id="popup-y-output" for="popup-y-input">55%</output>
 						</div>
 					</div>
+					<label class="popup-option-toggle">
+						<input id="popup-highlight-input" name="highlightEnabled" type="checkbox">
+						<span>Resaltar una zona del video<small>Se mostrará un círculo rojo sobre la posición seleccionada.</small></span>
+					</label>
+					<div class="popup-option-fields" id="popup-highlight-fields" hidden>
+						<div class="popup-form-grid">
+							<div class="editor-field"><label for="popup-highlight-x-input">Posición horizontal</label><input id="popup-highlight-x-input" name="highlightX" type="range" min="4" max="96" value="50"><output class="popup-position-output" id="popup-highlight-x-output" for="popup-highlight-x-input">50%</output></div>
+							<div class="editor-field"><label for="popup-highlight-y-input">Posición vertical</label><input id="popup-highlight-y-input" name="highlightY" type="range" min="5" max="95" value="50"><output class="popup-position-output" id="popup-highlight-y-output" for="popup-highlight-y-input">50%</output></div>
+						</div>
+					</div>
 					<div class="editor-field">
 						<label for="popup-document-input">Documento que abrirá al pulsar</label>
 						<select id="popup-document-input" name="materialId" required></select>
+					</div>
+					<div class="editor-field">
+						<label for="popup-image-input">Imagen opcional</label>
+						<input id="popup-image-input" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+						<p class="popup-image-note">Imágenes de hasta 400 KB.</p>
+						<p class="popup-image-note" id="popup-image-status" role="status" aria-live="polite"></p>
+						<img class="popup-image-preview" id="popup-image-preview" alt="Vista previa de la imagen del pop-up">
+						<button class="popup-image-remove" id="remove-popup-image-button" type="button" hidden>Quitar imagen adjunta</button>
 					</div>
 					<div class="editor-actions">
 						<button type="button" id="cancel-popup-button">Cancelar</button>
 						<button type="submit">Guardar pop-up</button>
 					</div>
+					<p class="popup-image-note" id="popup-form-status" role="status" aria-live="polite"></p>
 				</form>
 			</dialog>
 
