@@ -13,7 +13,8 @@ await window.VideotecaStoreReady;
 	if (isCreatingResource && !initialResources[resourceId]?.isDraft) {
 		resourceId = window.VideotecaStore.createResource({
 			title: "",
-			unit: "Unidad 1",
+			unit: "Unidad principal",
+			unitId: "unidad-principal",
 			duration: "Por definir",
 			description: "",
 			thumbnailUrl: initialResources.introduccion?.thumbnailUrl || "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80",
@@ -111,6 +112,82 @@ await window.VideotecaStoreReady;
 		});
 	}
 
+	async function captureVideoThumbnail(sourceUrl) {
+		const preview = document.createElement("video");
+		preview.crossOrigin = "anonymous";
+		preview.muted = true;
+		preview.playsInline = true;
+		preview.preload = "auto";
+		try {
+			await new Promise((resolve, reject) => {
+				const timeout = window.setTimeout(() => reject(new Error("Tiempo de espera agotado al cargar el video.")), 8000);
+				preview.addEventListener("loadedmetadata", () => {
+					window.clearTimeout(timeout);
+					resolve();
+				}, { once: true });
+				preview.addEventListener("error", () => {
+					window.clearTimeout(timeout);
+					reject(new Error("No se pudo leer el video para generar la miniatura."));
+				}, { once: true });
+				preview.src = sourceUrl;
+				preview.load();
+			});
+
+			const frameTime = Number.isFinite(preview.duration) && preview.duration > 0
+				? Math.min(1, preview.duration * 0.08)
+				: 0;
+			if (frameTime > 0.05) {
+				await new Promise((resolve, reject) => {
+					const timeout = window.setTimeout(() => reject(new Error("No se pudo posicionar el fotograma.")), 5000);
+					preview.addEventListener("seeked", () => {
+						window.clearTimeout(timeout);
+						resolve();
+					}, { once: true });
+					preview.currentTime = frameTime;
+				});
+			} else if (preview.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+				await new Promise((resolve, reject) => {
+					const timeout = window.setTimeout(() => reject(new Error("No se pudo decodificar el fotograma.")), 5000);
+					preview.addEventListener("loadeddata", () => {
+						window.clearTimeout(timeout);
+						resolve();
+					}, { once: true });
+					preview.addEventListener("error", () => {
+						window.clearTimeout(timeout);
+						reject(new Error("No se pudo decodificar el fotograma."));
+					}, { once: true });
+				});
+			}
+
+			if (!preview.videoWidth || !preview.videoHeight) throw new Error("El video no tiene dimensiones legibles.");
+			const canvas = document.createElement("canvas");
+			canvas.width = 640;
+			canvas.height = Math.max(1, Math.round(640 * preview.videoHeight / preview.videoWidth));
+			const context = canvas.getContext("2d");
+			context.drawImage(preview, 0, 0, canvas.width, canvas.height);
+			return canvas.toDataURL("image/jpeg", 0.82);
+		} finally {
+			preview.pause();
+			preview.removeAttribute("src");
+			preview.load();
+		}
+	}
+
+	async function getVideoThumbnail(videoUrl, source) {
+		if (source.thumbnailUrl) return source.thumbnailUrl;
+		if (source.kind !== "file") return "";
+		return captureVideoThumbnail(new URL(videoUrl, window.location.href).href);
+	}
+
+	async function captureFileThumbnail(file) {
+		const objectUrl = URL.createObjectURL(file);
+		try {
+			return await captureVideoThumbnail(objectUrl);
+		} finally {
+			URL.revokeObjectURL(objectUrl);
+		}
+	}
+
 	function resolveVideoUrl(value) {
 		const url = new URL(value, window.location.href);
 		if (!["http:", "https:", "file:"].includes(url.protocol)) throw new Error("Protocolo de video no compatible.");
@@ -120,7 +197,12 @@ await window.VideotecaStoreReady;
 			const videoId = host === "youtu.be"
 				? url.pathname.split("/").filter(Boolean)[0]
 				: url.searchParams.get("v") || url.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/)?.[1];
-			if (videoId) return { kind: "embed", url: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`, label: "YouTube" };
+			if (videoId) return {
+				kind: "embed",
+				url: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`,
+				thumbnailUrl: `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`,
+				label: "YouTube"
+			};
 		}
 
 		if (host === "drive.google.com") {
@@ -691,17 +773,33 @@ await window.VideotecaStoreReady;
 	document.querySelector("#save-video-url-button").addEventListener("click", async () => {
 		const videoUrl = document.querySelector("#video-url-input").value.trim();
 		if (!videoUrl) return;
+		let source;
 		try {
-			resolveVideoUrl(videoUrl);
+			source = resolveVideoUrl(videoUrl);
 		} catch {
 			resourceSaveStatus.textContent = "Introduce una URL válida.";
 			return;
 		}
+		resourceSaveStatus.textContent = "Generando miniatura del video...";
+		let thumbnailUrl = "";
+		try {
+			thumbnailUrl = await getVideoThumbnail(videoUrl, source);
+		} catch (error) {
+			console.warn("No se pudo generar la miniatura del video.", error);
+		}
 		const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
-		window.VideotecaStore.saveResource(resourceId, { videoUrl, videoBlobId: null, videoStoragePath: "", videoFileName: "" });
+		window.VideotecaStore.saveResource(resourceId, {
+			videoUrl,
+			videoBlobId: null,
+			videoStoragePath: "",
+			videoFileName: "",
+			...(thumbnailUrl ? { thumbnailUrl } : {})
+		});
 		if (previousStoragePath) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
 		renderResource();
-		resourceSaveStatus.textContent = "Video adjunto actualizado.";
+		resourceSaveStatus.textContent = thumbnailUrl
+			? "Video y miniatura actualizados."
+			: "Video actualizado; no se pudo capturar un fotograma y se conserva la miniatura anterior.";
 	});
 
 	trimStartInput.addEventListener("input", () => {
@@ -732,17 +830,27 @@ await window.VideotecaStoreReady;
 		const file = event.target.files[0];
 		if (!file) return;
 		try {
+			resourceSaveStatus.textContent = "Generando miniatura del video...";
+			let thumbnailUrl = "";
+			try {
+				thumbnailUrl = await captureFileThumbnail(file);
+			} catch (error) {
+				console.warn("No se pudo generar la miniatura del archivo.", error);
+			}
 			const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
 			const uploadedVideo = await storeVideoFile(file);
 			window.VideotecaStore.saveResource(resourceId, {
 				videoUrl: uploadedVideo.downloadUrl || "",
 				videoBlobId: uploadedVideo.localVideoId || null,
 				videoStoragePath: uploadedVideo.objectPath || "",
-				videoFileName: file.name
+				videoFileName: file.name,
+				...(thumbnailUrl ? { thumbnailUrl } : {})
 			});
 			if (previousStoragePath && !window.VideotecaStore.isDemoMode()) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
 			renderResource();
-			resourceSaveStatus.textContent = `Video adjunto: ${file.name}`;
+			resourceSaveStatus.textContent = thumbnailUrl
+				? `Video y miniatura actualizados: ${file.name}`
+				: `Video adjunto: ${file.name}. No se pudo capturar un fotograma y se conserva la miniatura anterior.`;
 		} catch {
 			resourceSaveStatus.textContent = "No se pudo subir el video a Firebase Storage.";
 		}

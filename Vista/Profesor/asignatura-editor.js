@@ -8,6 +8,9 @@ await window.VideotecaStoreReady;
 	const courseTitle = document.querySelector("#course-title");
 	const courseDescription = document.querySelector("#course-description");
 	const courseSaveStatus = document.querySelector("#course-save-status");
+	const unitManager = document.querySelector("#unit-manager");
+	const unitList = document.querySelector("#unit-list");
+	const unitCreateForm = document.querySelector("#unit-create-form");
 	const commentList = document.querySelector("#comment-list");
 	const commentCount = document.querySelector("#comment-count");
 	const commentForm = document.querySelector("#comment-form");
@@ -15,6 +18,48 @@ await window.VideotecaStoreReady;
 	const mentionResourceOptions = document.querySelector("#mention-resource-options");
 	const commentDrafts = new WeakMap();
 	let isEditing = false;
+
+	function renderUnitManager(units) {
+		unitManager.hidden = !isEditing;
+		unitList.replaceChildren();
+		units.forEach((unit) => {
+			const row = document.createElement("div");
+			row.className = "unit-row";
+			if (unit.id === "unidad-principal") {
+				const label = document.createElement("div");
+				label.className = "unit-primary-label";
+				label.textContent = unit.name;
+				const note = document.createElement("span");
+				note.className = "unit-primary-note";
+				note.textContent = "Unidad permanente";
+				label.append(note);
+				row.append(label);
+			} else {
+				const name = document.createElement("strong");
+				name.textContent = unit.name;
+				const form = document.createElement("form");
+				form.className = "unit-edit-form";
+				form.dataset.unitId = unit.id;
+				const input = document.createElement("input");
+				input.name = "name";
+				input.value = unit.name;
+				input.maxLength = 80;
+				input.required = true;
+				input.setAttribute("aria-label", `Nombre de la unidad ${unit.name}`);
+				const rename = document.createElement("button");
+				rename.type = "submit";
+				rename.textContent = "Renombrar";
+				const remove = document.createElement("button");
+				remove.type = "button";
+				remove.className = "unit-delete";
+				remove.dataset.deleteUnitId = unit.id;
+				remove.textContent = "Eliminar";
+				form.append(input, rename, remove);
+				row.append(name, form);
+			}
+			unitList.append(row);
+		});
+	}
 
 	function renderCourse(statusMessage = "") {
 		const data = window.VideotecaStore.get();
@@ -33,6 +78,33 @@ await window.VideotecaStoreReady;
 			? `${visibleResources.length} visibles · ${hiddenCount} ocultos`
 			: `${visibleResources.length} recursos · ${materialCount} materiales asociados`;
 		resourceGrid.replaceChildren();
+		renderUnitManager(data.course.units);
+		const unitGrids = new Map();
+		data.course.units.forEach((unit) => {
+			const section = document.createElement("section");
+			section.className = "unit-section";
+			section.dataset.unitSectionId = unit.id;
+			const heading = document.createElement("header");
+			heading.className = "unit-heading";
+			const title = document.createElement("h3");
+			title.textContent = unit.name;
+			const unitResourceCount = resources.filter(([, resource]) => resource.unitId === unit.id && (isEditing || !resource.isHidden)).length;
+			const count = document.createElement("span");
+			count.textContent = `${unitResourceCount} ${unitResourceCount === 1 ? "recurso" : "recursos"}`;
+			heading.append(title, count);
+			const grid = document.createElement("div");
+			grid.className = "resource-grid";
+			const unitResources = resources.filter(([, resource]) => resource.unitId === unit.id && (isEditing || !resource.isHidden));
+			if (!unitResources.length) {
+				const empty = document.createElement("p");
+				empty.className = "unit-empty";
+				empty.textContent = "Sin recursos";
+				grid.append(empty);
+			}
+			section.append(heading, grid);
+			resourceGrid.append(section);
+			unitGrids.set(unit.id, grid);
+		});
 
 		resources.filter(([, resource]) => isEditing || !resource.isHidden).forEach(([id, resource]) => {
 			const card = document.createElement("article");
@@ -103,11 +175,26 @@ await window.VideotecaStoreReady;
 			deleteButton.dataset.resourceAction = "delete";
 			deleteButton.dataset.resourceId = id;
 			deleteButton.textContent = "Eliminar recurso";
-			menuPanel.append(visibilityButton, deleteButton);
+			const moveLabel = document.createElement("label");
+			moveLabel.className = "unit-move-label";
+			moveLabel.textContent = "Mover a unidad";
+			const moveSelect = document.createElement("select");
+			moveSelect.className = "unit-move-select";
+			moveSelect.dataset.resourceAction = "move";
+			moveSelect.dataset.resourceId = id;
+			data.course.units.forEach((unit) => {
+				const option = document.createElement("option");
+				option.value = unit.id;
+				option.textContent = unit.name;
+				option.selected = unit.id === resource.unitId;
+				moveSelect.append(option);
+			});
+			moveLabel.append(moveSelect);
+			menuPanel.append(visibilityButton, deleteButton, moveLabel);
 			menu.append(menuToggle, menuPanel);
 
 			card.append(openLink, menu);
-			resourceGrid.append(card);
+			(unitGrids.get(resource.unitId) || unitGrids.get("unidad-principal"))?.append(card);
 		});
 		courseSaveStatus.textContent = statusMessage;
 	}
@@ -389,6 +476,56 @@ await window.VideotecaStoreReady;
 		}
 	});
 
+	resourceGrid.addEventListener("change", (event) => {
+		const selector = event.target.closest('select[data-resource-action="move"]');
+		if (!selector) return;
+		window.VideotecaStore.moveResourceToUnit(selector.dataset.resourceId, selector.value);
+		renderCourse("Recurso movido de unidad.");
+	});
+
+	unitCreateForm.addEventListener("submit", (event) => {
+		event.preventDefault();
+		const name = unitCreateForm.elements.name.value.trim();
+		if (!name) return;
+		try {
+			window.VideotecaStore.createUnit(name);
+			unitCreateForm.reset();
+			renderCourse("Unidad añadida.");
+		} catch (error) {
+			courseSaveStatus.textContent = error.message;
+		}
+	});
+
+	unitList.addEventListener("submit", (event) => {
+		const form = event.target.closest("form[data-unit-id]");
+		if (!form) return;
+		event.preventDefault();
+		const name = form.elements.name.value.trim();
+		if (!name) return;
+		try {
+			window.VideotecaStore.renameUnit(form.dataset.unitId, name);
+			renderCourse("Unidad renombrada.");
+		} catch (error) {
+			courseSaveStatus.textContent = error.message;
+		}
+	});
+
+	unitList.addEventListener("click", (event) => {
+		const button = event.target.closest("[data-delete-unit-id]");
+		if (!button) return;
+		const unit = window.VideotecaStore.getUnits().find((item) => item.id === button.dataset.deleteUnitId);
+		const resourcesToMove = Object.values(window.VideotecaStore.get().resources)
+			.filter((resource) => resource.unitId === button.dataset.deleteUnitId).length;
+		const message = resourcesToMove
+			? `¿Eliminar ${unit.name}? Sus ${resourcesToMove} recursos pasarán a la Unidad principal.`
+			: `¿Eliminar la unidad ${unit.name}?`;
+		if (!window.confirm(message)) return;
+		window.VideotecaStore.deleteUnit(button.dataset.deleteUnitId);
+		renderCourse(resourcesToMove
+			? `${unit.name} eliminada. ${resourcesToMove} recursos movidos a la Unidad principal.`
+			: `${unit.name} eliminada.`);
+	});
+
 	document.querySelector("#add-resource-button").addEventListener("click", () => {
 		window.location.href = `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&nuevo=1`;
 	});
@@ -415,7 +552,8 @@ await window.VideotecaStoreReady;
 		}
 		const mention = event.target.closest("[data-resource-mention-id]");
 		if (mention) {
-			const card = [...resourceGrid.children].find((item) => item.dataset.resourceCardId === mention.dataset.resourceMentionId);
+			const card = [...resourceGrid.querySelectorAll("[data-resource-card-id]")]
+				.find((item) => item.dataset.resourceCardId === mention.dataset.resourceMentionId);
 			if (!card) {
 				courseSaveStatus.textContent = "El recurso mencionado ya no está disponible en la página.";
 				return;

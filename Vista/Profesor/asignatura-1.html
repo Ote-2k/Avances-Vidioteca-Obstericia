@@ -133,7 +133,34 @@
 		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 		h2 { margin: 0; font-size: 17px; font-weight: 600; }
 		.resource-count { color: var(--muted); font-size: 13px; }
+		.unit-groups { display: grid; gap: 28px; }
+		.unit-section { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+		.unit-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+		.unit-heading h3 { margin: 0; font-size: 16px; font-weight: 600; }
+		.unit-heading span { color: var(--muted); font-size: 12px; }
+		.unit-empty { grid-column: 1 / -1; margin: 0; padding: 12px 0; color: var(--muted); }
 		.resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+		.unit-manager { margin: 22px 0 32px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+		.unit-manager[hidden] { display: none; }
+		.unit-manager-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+		.unit-manager-header h2 { margin: 0; font-size: 16px; }
+		.unit-manager-header p { margin: 0; color: var(--muted); font-size: 12px; }
+		.unit-create-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+		.unit-create-form input, .unit-edit-form input, .unit-create-form button, .unit-edit-form button { min-width: 0; padding: 9px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.unit-create-form input { flex: 1 1 220px; }
+		.unit-create-form button, .unit-edit-form button { font-weight: 600; cursor: pointer; }
+		.unit-create-form button, .unit-edit-form button[type="submit"] { background: var(--soft); }
+		.unit-create-form button:hover, .unit-edit-form button:hover { background: #e8e8e5; }
+		.unit-list { display: grid; }
+		.unit-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr); align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+		.unit-primary-label { font-weight: 600; }
+		.unit-primary-note { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+		.unit-edit-form { display: flex; gap: 7px; }
+		.unit-edit-form input { flex: 1; }
+		.unit-edit-form .unit-delete { color: #8e3028; }
+		.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+		.unit-move-label { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+		.unit-move-select { width: 100%; margin-top: 4px; padding: 8px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--text); font: inherit; }
 		.resource-card {
 			overflow: hidden;
 			background: var(--surface);
@@ -291,7 +318,7 @@
 			cursor: pointer;
 		}
 		.resource-menu summary::-webkit-details-marker { display: none; }
-		.resource-menu-panel { position: absolute; top: 40px; right: 0; width: 174px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.resource-menu-panel { position: absolute; top: 40px; right: 0; width: 220px; max-width: calc(100vw - 56px); padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
 		.resource-menu-panel button, .comment-remove { width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 		.resource-menu-panel button:hover, .comment-remove:hover { background: var(--soft); }
 		.resource-menu-panel .delete-resource, .comment-remove { color: #8e3028; }
@@ -320,6 +347,9 @@
 			.course-cover { aspect-ratio: 2 / 1; min-height: 140px; margin-bottom: 20px; }
 			h1 { font-size: 23px; }
 			.resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+			.unit-row { grid-template-columns: 1fr; gap: 8px; }
+			.unit-edit-form { flex-wrap: wrap; }
+			.unit-edit-form input { flex-basis: 100%; }
 			.comments-section { margin-top: 34px; padding-top: 22px; }
 		}
 		@media (max-width: 560px) {
@@ -363,13 +393,25 @@
 			</div>
 			<p class="course-description editable" id="course-description" aria-label="Descripción de la asignatura">Recursos y contenidos disponibles para esta asignatura.</p>
 			<p class="save-status" id="course-save-status" role="status" aria-live="polite"></p>
+			<section class="unit-manager" id="unit-manager" aria-labelledby="unit-manager-title" hidden>
+				<div class="unit-manager-header">
+					<h2 id="unit-manager-title">Unidades</h2>
+					<p>Los recursos de una unidad eliminada vuelven a la Unidad principal.</p>
+				</div>
+				<form class="unit-create-form" id="unit-create-form">
+					<label class="visually-hidden" for="unit-name-input">Nombre de la unidad</label>
+					<input id="unit-name-input" name="name" maxlength="80" placeholder="Nombre de la nueva unidad" required>
+					<button type="submit">Añadir unidad</button>
+				</form>
+				<div class="unit-list" id="unit-list"></div>
+			</section>
 
 			<section aria-labelledby="resources-title">
 				<div class="section-heading">
 					<h2 id="resources-title">Recursos de aprendizaje</h2>
 					<span class="resource-count" id="resource-count"></span>
 				</div>
-				<div class="resource-grid" id="resource-grid"></div>
+				<div class="unit-groups" id="resource-grid"></div>
 			</section>
 
 			<section class="comments-section" aria-labelledby="comments-title">

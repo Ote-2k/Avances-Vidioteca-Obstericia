@@ -23,7 +23,8 @@ window.VideotecaStoreReady = (async () => {
 		course: {
 			title: "Asignatura 1",
 			description: "Recursos y contenidos disponibles para esta asignatura.",
-			coverUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1600&q=80"
+			coverUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1600&q=80",
+			units: [{ id: "unidad-principal", name: "Unidad principal" }]
 		},
 		resources: {
 			introduccion: {
@@ -83,6 +84,22 @@ window.VideotecaStoreReady = (async () => {
 			]
 		}
 	};
+	const initialResources = assignmentId === "asignatura-1" ? defaults.resources : {};
+	const initialComments = assignmentId === "asignatura-1" ? defaults.comments : { course: [] };
+
+	function normalizeData(nextData) {
+		const savedUnits = Array.isArray(nextData.course.units) ? nextData.course.units : [];
+		const primary = savedUnits.find((unit) => unit.id === "unidad-principal") || { id: "unidad-principal", name: "Unidad principal" };
+		const units = [primary, ...savedUnits.filter((unit) => unit.id !== primary.id && unit.id && unit.name)];
+		const unitsByName = new Map(units.map((unit) => [unit.name.trim().toLocaleLowerCase(), unit]));
+		const resources = Object.fromEntries(Object.entries(nextData.resources).map(([id, resource]) => {
+			const assignedUnit = units.find((unit) => unit.id === resource.unitId)
+				|| unitsByName.get(String(resource.unit || "").trim().toLocaleLowerCase())
+				|| primary;
+			return [id, { ...resource, unitId: assignedUnit.id, unit: assignedUnit.name }];
+		}));
+		return { ...nextData, course: { ...nextData.course, units }, resources };
+	}
 
 	function readLocal() {
 		let saved = {};
@@ -95,7 +112,7 @@ window.VideotecaStoreReady = (async () => {
 		const deletedResources = new Set(saved.deletedResources || []);
 		const resources = {};
 		const previousSampleVideo = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-		Object.entries(defaults.resources).forEach(([id, resource]) => {
+		Object.entries(initialResources).forEach(([id, resource]) => {
 			if (deletedResources.has(id)) return;
 			const savedResource = saved.resources?.[id] || {};
 			const mergedResource = { ...resource, ...savedResource };
@@ -110,7 +127,7 @@ window.VideotecaStoreReady = (async () => {
 			}
 		});
 		Object.entries(saved.resources || {}).forEach(([id, resource]) => {
-			if (defaults.resources[id] || deletedResources.has(id)) return;
+			if (initialResources[id] || deletedResources.has(id)) return;
 			resources[id] = {
 				...resource,
 				materials: (resource.materials || []).map((material, index) => ({
@@ -121,12 +138,12 @@ window.VideotecaStoreReady = (async () => {
 			};
 		});
 
-		return {
+		return normalizeData({
 			course: { ...defaults.course, ...(saved.course || {}) },
 			resources,
-			comments: { ...defaults.comments, ...(saved.comments || {}) },
+			comments: { ...initialComments, ...(saved.comments || {}) },
 			deletedResources: [...deletedResources]
-		};
+		});
 	}
 
 	const assignmentRef = doc(db, "asignaturas", assignmentId);
@@ -136,14 +153,42 @@ window.VideotecaStoreReady = (async () => {
 
 	function readLocalAssignments() {
 		try {
-			return JSON.parse(localStorage.getItem(assignmentsKey) || "[{\"id\":\"asignatura-1\",\"title\":\"Asignatura 1\"}]");
+			return JSON.parse(localStorage.getItem(assignmentsKey) || "[]")
+				.filter((item) => item.id !== "asignatura-1" || item.title !== "Asignatura 1");
 		} catch {
-			return [{ id: "asignatura-1", title: "Asignatura 1" }];
+			return [];
 		}
 	}
 
 	function writeLocalAssignments(assignments) {
 		localStorage.setItem(assignmentsKey, JSON.stringify(assignments));
+	}
+
+	async function deleteLocalAssignmentVideos(id, resources) {
+		if (!window.indexedDB) return;
+		const database = await new Promise((resolve, reject) => {
+			const request = indexedDB.open("videoteca-profesor-media-v1", 1);
+			request.onupgradeneeded = () => request.result.createObjectStore("videos");
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		if (!database.objectStoreNames.contains("videos")) {
+			database.close();
+			return;
+		}
+		await new Promise((resolve, reject) => {
+			const transaction = database.transaction("videos", "readwrite");
+			const videos = transaction.objectStore("videos");
+			const keysRequest = videos.getAllKeys();
+			const legacyVideoIds = new Set(Object.entries(resources).flatMap(([resourceId, resource]) => [resourceId, resource.videoBlobId].filter(Boolean)));
+			keysRequest.onsuccess = () => keysRequest.result.forEach((key) => {
+				if (String(key).startsWith(`${id}-`) || legacyVideoIds.has(String(key))) videos.delete(key);
+			});
+			keysRequest.onerror = () => reject(keysRequest.error);
+			transaction.oncomplete = resolve;
+			transaction.onerror = () => reject(transaction.error);
+		});
+		database.close();
 	}
 
 	function notifySync(type, error = null) {
@@ -182,6 +227,10 @@ window.VideotecaStoreReady = (async () => {
 	async function initialize() {
 		try {
 			if (demoMode) {
+				if (window.location.pathname.endsWith("/main.html")) {
+					data = { course: defaults.course, resources: {}, comments: { course: [] }, deletedResources: [] };
+					return;
+				}
 				const assignment = readLocalAssignments().find((item) => item.id === assignmentId);
 				if (!assignment) {
 					window.location.href = "main.html";
@@ -207,12 +256,13 @@ window.VideotecaStoreReady = (async () => {
 				data = {
 					course: { ...defaults.course, ...(saved.course || {}) },
 					resources: Object.fromEntries(resourcesSnapshot.docs.map((item) => [item.id, item.data()])),
-					comments: { ...defaults.comments, ...(saved.comments || {}) },
+					comments: { ...initialComments, ...(saved.comments || {}) },
 					deletedResources: []
 				};
+				data = normalizeData(data);
 			} else if (assignmentId !== "asignatura-1") {
 				data = {
-					course: { title: "Nueva asignatura", description: "Recursos y contenidos disponibles para esta asignatura.", coverUrl: defaults.course.coverUrl },
+					course: { ...defaults.course, title: "Nueva asignatura" },
 					resources: {}, comments: { course: [] }, deletedResources: []
 				};
 				await setDoc(assignmentRef, { course: data.course, comments: data.comments, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
@@ -236,6 +286,8 @@ window.VideotecaStoreReady = (async () => {
 	window.VideotecaStore = {
 		get: () => data,
 		getAssignmentId: () => assignmentId,
+		getUnits: () => data.course.units,
+		refreshAssignmentNavigation: () => renderAssignmentNavigation(),
 		getCloudStatus: () => cloudReady,
 		isDemoMode: () => demoMode,
 		flush: () => persistQueue,
@@ -250,6 +302,31 @@ window.VideotecaStoreReady = (async () => {
 				return [{ id: assignmentId, ...data.course }];
 			}
 		},
+		getAssignmentResourceCount(id) {
+			if (!demoMode) return 0;
+			try {
+				const saved = JSON.parse(localStorage.getItem(`videoteca-profesor-edits-v1-${id}`) || "{}");
+				return Object.keys(saved.resources || {}).length;
+			} catch {
+				return 0;
+			}
+		},
+		async deleteAssignment(id) {
+			if (!demoMode) throw new Error("La eliminación de asignaturas solo está disponible en el modo demo local.");
+			const assignments = readLocalAssignments();
+			const assignment = assignments.find((item) => item.id === id);
+			if (!assignment) return false;
+			let saved = {};
+			try {
+				saved = JSON.parse(localStorage.getItem(`videoteca-profesor-edits-v1-${id}`) || "{}");
+			} catch {
+				saved = {};
+			}
+			await deleteLocalAssignmentVideos(id, saved.resources || {});
+			writeLocalAssignments(assignments.filter((item) => item.id !== id));
+			localStorage.removeItem(`videoteca-profesor-edits-v1-${id}`);
+			return true;
+		},
 		async createAssignment(title) {
 			if (demoMode) {
 				const id = `asignatura-${Date.now().toString(36)}`;
@@ -257,7 +334,7 @@ window.VideotecaStoreReady = (async () => {
 				return id;
 			}
 			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas de Firestore.");
-			const course = { title, description: "Recursos y contenidos disponibles para esta asignatura.", coverUrl: defaults.course.coverUrl };
+			const course = { ...defaults.course, title, units: [{ id: "unidad-principal", name: "Unidad principal" }] };
 			const created = await addDoc(collection(db, "asignaturas"), { course, comments: { course: [] }, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
 			return created.id;
 		},
@@ -285,6 +362,55 @@ window.VideotecaStoreReady = (async () => {
 			write(data);
 			return data;
 		},
+		createUnit(name) {
+			const normalizedName = name.trim().toLocaleLowerCase();
+			if (data.course.units.some((unit) => unit.name.trim().toLocaleLowerCase() === normalizedName)) {
+				throw new Error("Ya existe una unidad con ese nombre.");
+			}
+			const unit = { id: `unidad-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, name: name.trim() };
+			data.course.units = [...data.course.units, unit];
+			write(data);
+			return unit;
+		},
+		renameUnit(id, name) {
+			if (id === "unidad-principal") throw new Error("La Unidad principal no se puede renombrar.");
+			const normalizedName = name.trim().toLocaleLowerCase();
+			if (data.course.units.some((unit) => unit.id !== id && unit.name.trim().toLocaleLowerCase() === normalizedName)) {
+				throw new Error("Ya existe una unidad con ese nombre.");
+			}
+			const unit = data.course.units.find((item) => item.id === id);
+			if (!unit) return false;
+			unit.name = name.trim();
+			Object.values(data.resources).forEach((resource) => {
+				if (resource.unitId === id) resource.unit = unit.name;
+			});
+			write(data);
+			return true;
+		},
+		deleteUnit(id) {
+			if (id === "unidad-principal") return false;
+			const unit = data.course.units.find((item) => item.id === id);
+			if (!unit) return false;
+			const primary = data.course.units.find((item) => item.id === "unidad-principal");
+			Object.values(data.resources).forEach((resource) => {
+				if (resource.unitId === id) {
+					resource.unitId = primary.id;
+					resource.unit = primary.name;
+				}
+			});
+			data.course.units = data.course.units.filter((item) => item.id !== id);
+			write(data);
+			return true;
+		},
+		moveResourceToUnit(resourceId, unitId) {
+			const resource = data.resources[resourceId];
+			const unit = data.course.units.find((item) => item.id === unitId);
+			if (!resource || !unit) return false;
+			resource.unitId = unit.id;
+			resource.unit = unit.name;
+			write(data);
+			return true;
+		},
 		saveResource(id, updates) {
 			if (!data.resources[id]) return null;
 			data.resources[id] = { ...data.resources[id], ...updates };
@@ -293,7 +419,8 @@ window.VideotecaStoreReady = (async () => {
 		},
 		createResource(resource) {
 			const id = `recurso-${Date.now().toString(36)}`;
-			data.resources[id] = { ...resource, isHidden: false };
+			const assignedUnit = data.course.units.find((unit) => unit.id === resource.unitId) || data.course.units[0];
+			data.resources[id] = { ...resource, unitId: assignedUnit.id, unit: assignedUnit.name, isHidden: false };
 			write(data);
 			return id;
 		},
