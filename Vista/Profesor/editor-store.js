@@ -1,5 +1,24 @@
-(() => {
-	const storageKey = "videoteca-profesor-edits-v1";
+import { auth, db } from "../../firebase-config.js";
+import {
+	addDoc,
+	collection,
+	doc,
+	getDoc,
+	getDocs,
+	serverTimestamp,
+	setDoc,
+	query,
+	updateDoc,
+	where,
+	writeBatch
+} from "firebase/firestore";
+
+window.VideotecaStoreReady = (async () => {
+	const assignmentId = new URLSearchParams(window.location.search).get("asignatura") || "asignatura-1";
+	const storageKey = `videoteca-profesor-edits-v1-${assignmentId}`;
+	const legacyStorageKey = "videoteca-profesor-edits-v1";
+	const assignmentsKey = "videoteca-profesor-assignments-v1";
+	const demoMode = localStorage.getItem("videotecaDemoRole") === "profesor";
 	const defaults = {
 		course: {
 			title: "Asignatura 1",
@@ -65,10 +84,10 @@
 		}
 	};
 
-	function read() {
+	function readLocal() {
 		let saved = {};
 		try {
-			saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+			saved = JSON.parse(localStorage.getItem(storageKey) || (assignmentId === "asignatura-1" ? localStorage.getItem(legacyStorageKey) : null) || "{}");
 		} catch {
 			saved = {};
 		}
@@ -110,41 +129,181 @@
 		};
 	}
 
-	function write(data) {
-		localStorage.setItem(storageKey, JSON.stringify(data));
+	const assignmentRef = doc(db, "asignaturas", assignmentId);
+	let data = readLocal();
+	let cloudReady = false;
+	let persistQueue = Promise.resolve();
+
+	function readLocalAssignments() {
+		try {
+			return JSON.parse(localStorage.getItem(assignmentsKey) || "[{\"id\":\"asignatura-1\",\"title\":\"Asignatura 1\"}]");
+		} catch {
+			return [{ id: "asignatura-1", title: "Asignatura 1" }];
+		}
 	}
 
+	function writeLocalAssignments(assignments) {
+		localStorage.setItem(assignmentsKey, JSON.stringify(assignments));
+	}
+
+	function notifySync(type, error = null) {
+		if (type === "error") {
+			document.querySelectorAll("#course-save-status, #resource-save-status, #assignment-status").forEach((status) => {
+				status.textContent = "Firebase no está disponible o no autorizó el cambio; revisa la conexión, el acceso y las reglas.";
+			});
+		}
+		window.dispatchEvent(new CustomEvent(`videoteca:${type}`, { detail: error }));
+	}
+
+	async function persist(snapshot) {
+		await setDoc(assignmentRef, { course: snapshot.course, comments: snapshot.comments, ownerUid: auth.currentUser.uid, updatedAt: serverTimestamp() }, { merge: true });
+		const resourcesRef = collection(assignmentRef, "recursos");
+		const storedResources = await getDocs(resourcesRef);
+		const batch = writeBatch(db);
+		const resourceIds = new Set(Object.keys(snapshot.resources));
+		storedResources.forEach((stored) => {
+			if (!resourceIds.has(stored.id)) batch.delete(stored.ref);
+		});
+		Object.entries(snapshot.resources).forEach(([id, resource]) => {
+			batch.set(doc(resourcesRef, id), resource);
+		});
+		await batch.commit();
+	}
+
+	function write(nextData) {
+		data = nextData;
+		localStorage.setItem(storageKey, JSON.stringify(data));
+		if (!cloudReady) return;
+		const snapshot = JSON.parse(JSON.stringify(data));
+		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => notifySync("saved"))
+			.catch((error) => notifySync("error", error));
+	}
+
+	async function initialize() {
+		try {
+			if (demoMode) {
+				const assignment = readLocalAssignments().find((item) => item.id === assignmentId);
+				if (!assignment) {
+					window.location.href = "main.html";
+					return;
+				}
+				if (assignmentId !== "asignatura-1" && !localStorage.getItem(storageKey)) {
+					data = { course: { ...defaults.course, title: assignment.title }, resources: {}, comments: { course: [] }, deletedResources: [] };
+				} else {
+					data.course = { ...data.course, title: assignment.title };
+				}
+				localStorage.setItem(storageKey, JSON.stringify(data));
+				return;
+			}
+			await auth.authStateReady();
+			if (!auth.currentUser) {
+				window.location.href = "../../login.html";
+				return;
+			}
+			const assignmentSnapshot = await getDoc(assignmentRef);
+			if (assignmentSnapshot.exists()) {
+				const saved = assignmentSnapshot.data();
+				const resourcesSnapshot = await getDocs(collection(assignmentRef, "recursos"));
+				data = {
+					course: { ...defaults.course, ...(saved.course || {}) },
+					resources: Object.fromEntries(resourcesSnapshot.docs.map((item) => [item.id, item.data()])),
+					comments: { ...defaults.comments, ...(saved.comments || {}) },
+					deletedResources: []
+				};
+			} else if (assignmentId !== "asignatura-1") {
+				data = {
+					course: { title: "Nueva asignatura", description: "Recursos y contenidos disponibles para esta asignatura.", coverUrl: defaults.course.coverUrl },
+					resources: {}, comments: { course: [] }, deletedResources: []
+				};
+				await setDoc(assignmentRef, { course: data.course, comments: data.comments, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
+			} else {
+				await setDoc(assignmentRef, { course: data.course, comments: data.comments, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
+				const batch = writeBatch(db);
+				const resourcesRef = collection(assignmentRef, "recursos");
+				Object.entries(data.resources).forEach(([id, resource]) => batch.set(doc(resourcesRef, id), resource));
+				await batch.commit();
+			}
+			cloudReady = true;
+			localStorage.setItem(storageKey, JSON.stringify(data));
+		} catch (error) {
+			console.error("No se pudo cargar la asignatura desde Firebase.", error);
+			notifySync("error", error);
+		}
+	}
+
+	await initialize();
+
 	window.VideotecaStore = {
-		get: read,
+		get: () => data,
+		getAssignmentId: () => assignmentId,
+		getCloudStatus: () => cloudReady,
+		isDemoMode: () => demoMode,
+		flush: () => persistQueue,
+		async getAssignments() {
+			if (demoMode) return readLocalAssignments();
+			if (!cloudReady) return [{ id: assignmentId, ...data.course }];
+			try {
+				const assignments = await getDocs(query(collection(db, "asignaturas"), where("ownerUid", "==", auth.currentUser.uid)));
+				return assignments.docs.map((item) => ({ id: item.id, ...(item.data().course || {}) }));
+			} catch (error) {
+				notifySync("error", error);
+				return [{ id: assignmentId, ...data.course }];
+			}
+		},
+		async createAssignment(title) {
+			if (demoMode) {
+				const id = `asignatura-${Date.now().toString(36)}`;
+				writeLocalAssignments([...readLocalAssignments(), { id, title }]);
+				return id;
+			}
+			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas de Firestore.");
+			const course = { title, description: "Recursos y contenidos disponibles para esta asignatura.", coverUrl: defaults.course.coverUrl };
+			const created = await addDoc(collection(db, "asignaturas"), { course, comments: { course: [] }, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
+			return created.id;
+		},
+		async renameAssignment(id, title) {
+			if (demoMode) {
+				writeLocalAssignments(readLocalAssignments().map((item) => item.id === id ? { ...item, title } : item));
+				if (id === assignmentId) {
+					data.course = { ...data.course, title };
+					localStorage.setItem(storageKey, JSON.stringify(data));
+				}
+				return;
+			}
+			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas de Firestore.");
+			const target = doc(db, "asignaturas", id);
+			const saved = await getDoc(target);
+			if (!saved.exists()) throw new Error("La asignatura ya no existe.");
+			await updateDoc(target, { "course.title": title, updatedAt: serverTimestamp() });
+			if (id === assignmentId) {
+				data.course = { ...data.course, title };
+				localStorage.setItem(storageKey, JSON.stringify(data));
+			}
+		},
 		saveCourse(updates) {
-			const data = read();
 			data.course = { ...data.course, ...updates };
 			write(data);
 			return data;
 		},
 		saveResource(id, updates) {
-			const data = read();
 			if (!data.resources[id]) return null;
 			data.resources[id] = { ...data.resources[id], ...updates };
 			write(data);
 			return data;
 		},
 		createResource(resource) {
-			const data = read();
 			const id = `recurso-${Date.now().toString(36)}`;
 			data.resources[id] = { ...resource, isHidden: false };
 			write(data);
 			return id;
 		},
 		setResourceHidden(id, isHidden) {
-			const data = read();
 			if (!data.resources[id]) return false;
 			data.resources[id].isHidden = isHidden;
 			write(data);
 			return true;
 		},
 		deleteResource(id) {
-			const data = read();
 			if (!data.resources[id]) return false;
 			delete data.resources[id];
 			data.deletedResources = [...new Set([...data.deletedResources, id])];
@@ -152,14 +311,12 @@
 			return true;
 		},
 		addComment(scope, comment) {
-			const data = read();
 			const newComment = { ...comment, id: `comentario-${Date.now().toString(36)}` };
 			data.comments[scope] = [...(data.comments[scope] || []), newComment];
 			write(data);
 			return newComment;
 		},
 		deleteComment(scope, id) {
-			const data = read();
 			if (!data.comments[scope]) return false;
 			const removedIds = new Set([id]);
 			let foundReply;
@@ -177,4 +334,32 @@
 			return true;
 		}
 	};
+
+	async function renderAssignmentNavigation() {
+		const assignments = await window.VideotecaStore.getAssignments();
+		document.querySelectorAll(".course-list").forEach((list) => {
+			list.replaceChildren();
+			assignments.forEach((assignment) => {
+				const item = document.createElement("li");
+				const link = document.createElement("a");
+				link.href = `asignatura-1.html?asignatura=${encodeURIComponent(assignment.id)}`;
+				link.textContent = assignment.title || "Asignatura sin nombre";
+				if (assignment.id === assignmentId && !window.location.pathname.endsWith("main.html")) {
+					item.setAttribute("aria-current", "page");
+				}
+				item.append(link);
+				list.append(item);
+			});
+		});
+	}
+
+	await renderAssignmentNavigation();
+	document.querySelectorAll("#demo-logout").forEach((button) => {
+		button.addEventListener("click", () => {
+			localStorage.removeItem("videotecaDemoRole");
+			localStorage.removeItem("videotecaDemoEmail");
+			localStorage.removeItem("sesionIniciada");
+			window.location.href = "../../login.html";
+		});
+	});
 })();

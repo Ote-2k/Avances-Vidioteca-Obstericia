@@ -1,3 +1,9 @@
+import { storage } from "../../firebase-config.js";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import "./editor-store.js";
+
+await window.VideotecaStoreReady;
+
 (() => {
 	const pageParams = new URLSearchParams(window.location.search);
 	const selectedId = pageParams.get("recurso");
@@ -10,14 +16,14 @@
 			unit: "Unidad 1",
 			duration: "Por definir",
 			description: "",
-			thumbnailUrl: initialResources.introduccion.thumbnailUrl,
+			thumbnailUrl: initialResources.introduccion?.thumbnailUrl || "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80",
 			videoUrl: "",
 			materials: [],
 			popups: [],
 			isDraft: true
 		});
 		window.VideotecaStore.saveResource(resourceId, { isHidden: true });
-		window.history.replaceState(null, "", `recurso.html?recurso=${encodeURIComponent(resourceId)}&nuevo=1`);
+		window.history.replaceState(null, "", `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}&nuevo=1`);
 	} else if (isCreatingResource) {
 		resourceId = selectedId;
 	}
@@ -66,37 +72,43 @@
 	let popupImageToRemove = false;
 	const completedPopupIds = new Set();
 	const maxPopupImageSize = 400 * 1024;
-	let videoDatabasePromise;
-	let activeVideoObjectUrl = "";
 	let activeEditorAction = "popups";
+	let activeLocalVideoUrl = "";
 
-	function openVideoDatabase() {
-		if (!videoDatabasePromise) {
-			videoDatabasePromise = new Promise((resolve, reject) => {
-				const request = indexedDB.open("videoteca-profesor-media-v1", 1);
-				request.onupgradeneeded = () => request.result.createObjectStore("videos");
-				request.onsuccess = () => resolve(request.result);
-				request.onerror = () => reject(request.error);
-			});
-		}
-		return videoDatabasePromise;
-	}
-
-	function storeVideoFile(file) {
-		return openVideoDatabase().then((database) => new Promise((resolve, reject) => {
-			const transaction = database.transaction("videos", "readwrite");
-			transaction.objectStore("videos").put(file, resourceId);
-			transaction.oncomplete = () => resolve();
-			transaction.onerror = () => reject(transaction.error);
-		}));
-	}
-
-	function readVideoFile() {
-		return openVideoDatabase().then((database) => new Promise((resolve, reject) => {
-			const request = database.transaction("videos", "readonly").objectStore("videos").get(resourceId);
-			request.onsuccess = () => resolve(request.result || null);
+	function openLocalVideoDatabase() {
+		return new Promise((resolve, reject) => {
+			const request = indexedDB.open("videoteca-profesor-media-v1", 1);
+			request.onupgradeneeded = () => request.result.createObjectStore("videos");
+			request.onsuccess = () => resolve(request.result);
 			request.onerror = () => reject(request.error);
-		}));
+		});
+	}
+
+	async function storeVideoFile(file) {
+		if (window.VideotecaStore.isDemoMode()) {
+			const videoId = `${window.VideotecaStore.getAssignmentId()}-${resourceId}`;
+			const database = await openLocalVideoDatabase();
+			await new Promise((resolve, reject) => {
+				const transaction = database.transaction("videos", "readwrite");
+				transaction.objectStore("videos").put(file, videoId);
+				transaction.oncomplete = resolve;
+				transaction.onerror = () => reject(transaction.error);
+			});
+			return { localVideoId: videoId };
+		}
+		const objectPath = `videos/${window.VideotecaStore.getAssignmentId()}/${resourceId}/${Date.now()}-${encodeURIComponent(file.name)}`;
+		const videoRef = ref(storage, objectPath);
+		await uploadBytes(videoRef, file, { contentType: file.type || "video/mp4" });
+		return { objectPath, downloadUrl: await getDownloadURL(videoRef) };
+	}
+
+	async function readLegacyVideoFile(videoId = resourceId) {
+		const database = await openLocalVideoDatabase();
+		return new Promise((resolve, reject) => {
+			const readRequest = database.transaction("videos", "readonly").objectStore("videos").get(videoId);
+				readRequest.onsuccess = () => resolve(readRequest.result || null);
+				readRequest.onerror = () => reject(readRequest.error);
+		});
 	}
 
 	function resolveVideoUrl(value) {
@@ -187,7 +199,7 @@
 	}
 
 	function renderPopups(resource) {
-		let supportsTimedPopups = Boolean(resource.videoBlobId);
+		let supportsTimedPopups = Boolean(resource.videoStoragePath);
 		if (!supportsTimedPopups) {
 			try {
 				supportsTimedPopups = resolveVideoUrl(resource.videoUrl).kind === "file";
@@ -354,12 +366,42 @@
 	}
 
 	async function loadVideo(resource) {
-		if (activeVideoObjectUrl) URL.revokeObjectURL(activeVideoObjectUrl);
-		activeVideoObjectUrl = "";
+		if (activeLocalVideoUrl) URL.revokeObjectURL(activeLocalVideoUrl);
+		activeLocalVideoUrl = "";
 		videoEmbed.removeAttribute("src");
 		videoEmbed.hidden = true;
 		resourcePlayer.hidden = false;
-		if (!resource.videoBlobId && !resource.videoUrl.trim()) {
+		if (resource.videoBlobId && !resource.videoStoragePath) {
+			try {
+				const file = await readLegacyVideoFile(resource.videoBlobId);
+				if (file) {
+					if (window.VideotecaStore.isDemoMode()) {
+						activeLocalVideoUrl = URL.createObjectURL(file);
+						resourcePlayer.src = activeLocalVideoUrl;
+						resourcePlayer.load();
+						videoSourceStatus.textContent = `Archivo local de demostración: ${resource.videoFileName || file.name}`;
+						document.querySelector('input[name="video-source-mode"][value="file"]').checked = true;
+						updateSourceMode();
+						return;
+					}
+					videoSourceStatus.textContent = "Migrando el video guardado en este navegador...";
+					const uploadedVideo = await storeVideoFile(file);
+					window.VideotecaStore.saveResource(resourceId, { videoUrl: uploadedVideo.downloadUrl, videoBlobId: null, videoStoragePath: uploadedVideo.objectPath, videoFileName: file.name });
+					resource = window.VideotecaStore.get().resources[resourceId];
+				} else if (!resource.videoUrl.trim()) {
+					videoSourceStatus.textContent = "El archivo anterior solo estaba en otro navegador; vuelve a subir el video para guardarlo en Firebase.";
+					resourcePlayer.removeAttribute("src");
+					resourcePlayer.load();
+					updateDurationAvailability();
+					return;
+				}
+			} catch {
+				videoSourceStatus.textContent = "No se pudo migrar el video anterior a Firebase Storage.";
+				return;
+			}
+		}
+
+		if (!resource.videoUrl.trim()) {
 			resourcePlayer.removeAttribute("src");
 			resourcePlayer.load();
 			videoSourceStatus.textContent = "Sin video adjunto";
@@ -367,26 +409,14 @@
 			return;
 		}
 
-		if (resource.videoBlobId) {
-			try {
-				const file = await readVideoFile();
-				if (file && window.VideotecaStore.get().resources[resourceId].videoBlobId === resource.videoBlobId) {
-					activeVideoObjectUrl = URL.createObjectURL(file);
-					resourcePlayer.src = activeVideoObjectUrl;
-					resourcePlayer.load();
-					videoSourceStatus.textContent = `Archivo: ${resource.videoFileName || "video local"}`;
-					document.querySelector('input[name="video-source-mode"][value="file"]').checked = true;
-					updateSourceMode();
-					return;
-				}
-			} catch {
-				resourceSaveStatus.textContent = "No se pudo recuperar el video guardado.";
-			}
-		}
-
 		const source = resolveVideoUrl(resource.videoUrl);
-		videoSourceStatus.textContent = source.label;
-		document.querySelector('input[name="video-source-mode"][value="url"]').checked = true;
+		if (resource.videoStoragePath) {
+			videoSourceStatus.textContent = `Archivo: ${resource.videoFileName || "video"}`;
+			document.querySelector('input[name="video-source-mode"][value="file"]').checked = true;
+		} else {
+			videoSourceStatus.textContent = source.label;
+			document.querySelector('input[name="video-source-mode"][value="url"]').checked = true;
+		}
 		updateSourceMode();
 		if (source.kind === "embed") {
 			resourcePlayer.removeAttribute("src");
@@ -408,7 +438,6 @@
 		document.title = `${resource.title} | Videoteca`;
 		resourceMeta.textContent = `${resource.unit} · Video educativo · ${resource.duration}`;
 		resourceDescription.textContent = resource.description;
-		document.querySelector("#course-nav-title").textContent = data.course.title;
 		document.querySelector("#video-url-input").value = resource.videoUrl;
 		trimStartInput.value = Number.isFinite(Number(resource.trimStart)) ? String(resource.trimStart) : "0";
 		trimEndInput.value = resource.trimEnd !== null && resource.trimEnd !== undefined && Number.isFinite(Number(resource.trimEnd)) ? String(resource.trimEnd) : "";
@@ -418,6 +447,12 @@
 		loadVideo(resource);
 		renderDocuments(resource);
 		renderPopups(resource);
+	}
+
+	if (window.VideotecaStore.isDemoMode()) {
+		resourceSaveStatus.textContent = "Modo demo local: los cambios y videos solo se guardan en este navegador.";
+	} else if (!window.VideotecaStore.getCloudStatus()) {
+		resourceSaveStatus.textContent = "Firebase no está conectado; los cambios solo se guardarán en este navegador.";
 	}
 
 	function appendCommentText(target, value) {
@@ -579,7 +614,7 @@
 		window.VideotecaStore.setResourceHidden(resourceId, false);
 		isCreatingResource = false;
 		document.body.classList.remove("resource-creation-pending");
-		window.history.replaceState(null, "", `recurso.html?recurso=${encodeURIComponent(resourceId)}`);
+		window.history.replaceState(null, "", `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}`);
 		setEditing(false);
 		resourceSaveStatus.textContent = "Recurso creado. Ya aparece en la asignatura.";
 	}
@@ -653,7 +688,7 @@
 		radio.addEventListener("change", updateSourceMode);
 	});
 
-	document.querySelector("#save-video-url-button").addEventListener("click", () => {
+	document.querySelector("#save-video-url-button").addEventListener("click", async () => {
 		const videoUrl = document.querySelector("#video-url-input").value.trim();
 		if (!videoUrl) return;
 		try {
@@ -662,7 +697,9 @@
 			resourceSaveStatus.textContent = "Introduce una URL válida.";
 			return;
 		}
-		window.VideotecaStore.saveResource(resourceId, { videoUrl, videoBlobId: null, videoFileName: "" });
+		const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
+		window.VideotecaStore.saveResource(resourceId, { videoUrl, videoBlobId: null, videoStoragePath: "", videoFileName: "" });
+		if (previousStoragePath) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
 		renderResource();
 		resourceSaveStatus.textContent = "Video adjunto actualizado.";
 	});
@@ -695,12 +732,19 @@
 		const file = event.target.files[0];
 		if (!file) return;
 		try {
-			await storeVideoFile(file);
-			window.VideotecaStore.saveResource(resourceId, { videoBlobId: resourceId, videoFileName: file.name });
+			const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
+			const uploadedVideo = await storeVideoFile(file);
+			window.VideotecaStore.saveResource(resourceId, {
+				videoUrl: uploadedVideo.downloadUrl || "",
+				videoBlobId: uploadedVideo.localVideoId || null,
+				videoStoragePath: uploadedVideo.objectPath || "",
+				videoFileName: file.name
+			});
+			if (previousStoragePath && !window.VideotecaStore.isDemoMode()) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
 			renderResource();
 			resourceSaveStatus.textContent = `Video adjunto: ${file.name}`;
 		} catch {
-			resourceSaveStatus.textContent = "No se pudo guardar el video local.";
+			resourceSaveStatus.textContent = "No se pudo subir el video a Firebase Storage.";
 		}
 		event.target.value = "";
 	});

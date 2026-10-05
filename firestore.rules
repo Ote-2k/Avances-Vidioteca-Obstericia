@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsAssignment(assignmentId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /asignaturas/{assignmentId} {
+      allow get, list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+
+      match /recursos/{resourceId} {
+        allow read, create, update, delete: if ownsAssignment(assignmentId);
+      }
+    }
+  }
+}

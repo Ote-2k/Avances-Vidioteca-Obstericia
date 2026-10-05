@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function ownsAssignment(assignmentId) {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /videos/{assignmentId}/{resourceId}/{fileName} {
+      allow read, delete: if ownsAssignment(assignmentId);
+      allow create, update: if ownsAssignment(assignmentId)
+        && request.resource.size < 500 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+    }
+  }
+}

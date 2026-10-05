@@ -3,15 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Opción B</title>
+  <title>Acceso | Videoteca</title>
   <link rel="stylesheet" href="styles.css">
   
-  <!-- CAMBIO 1: Script en el <head> para redirigir si YA inició sesión -->
-  <script>
-    if (localStorage.getItem("sesionIniciada")) {
-      window.location.href = "index.html";
-    }
-  </script>
 </head>
 <body>
 
@@ -32,11 +26,10 @@
         
         <!-- Logo -->
         <div class="login-logo">
-          <img src="https://via.placeholder.com/80" alt="Logo de la página">
+          <img src="LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO.svg" alt="Logo de Universidad Central">
         </div>
 
-        <!-- Nombre de la página -->
-        <h1 class="login-title">Nombre de la Página</h1>
+        <h1 class="login-title">Videoteca</h1>
         <p class="login-subtitle">Ingresa tus credenciales para acceder</p>
 
         <!-- CAMBIO 2: Se agregó id="login-form" y se quitó action="index.html" -->
@@ -63,24 +56,40 @@
           <button type="submit" class="btn-submit">Acceder</button>
 
         </form>
+        <p class="login-subtitle">Demo local: profesor@videoteca.demo / Profesor123! · alumno@videoteca.demo / Alumno123!</p>
+        <p id="login-status" role="status" aria-live="polite"></p>
 
       </div>
     </div>
 
   </div>
 
-  <!-- CAMBIO 3: Script de autenticación justo antes de cerrar </body> -->
-  <script>
-    const form = document.getElementById('login-form');
+  <script type="module">
+    const form = document.querySelector("#login-form");
+    const status = document.querySelector("#login-status");
+    const demoAccounts = {
+      "profesor@videoteca.demo": { password: "Profesor123!", role: "profesor" },
+      "alumno@videoteca.demo": { password: "Alumno123!", role: "alumno" }
+    };
+    const currentRole = localStorage.getItem("videotecaDemoRole");
+    if (currentRole === "profesor") window.location.href = "Vista/Profesor/main.html";
+    if (currentRole === "alumno") window.location.href = "index.html";
 
-    form.addEventListener('submit', function (event) {
-      event.preventDefault(); // Evita que la página se recargue inmediatamente
-
-      // Guarda la marca de sesión en el navegador
-      localStorage.setItem('sesionIniciada', 'true');
-
-      // Redirige al inicio
-      window.location.href = 'index.html';
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button[type=submit]");
+      button.disabled = true;
+      const email = form.elements.email.value.trim().toLowerCase();
+      const account = demoAccounts[email];
+      if (!account || form.elements.password.value !== account.password) {
+        status.textContent = "Correo o contraseña incorrectos.";
+        button.disabled = false;
+        return;
+      }
+      localStorage.setItem("videotecaDemoRole", account.role);
+      localStorage.setItem("videotecaDemoEmail", email);
+      localStorage.setItem("sesionIniciada", "true");
+      window.location.href = account.role === "profesor" ? "Vista/Profesor/main.html" : "index.html";
     });
   </script>
 

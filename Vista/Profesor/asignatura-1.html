@@ -42,6 +42,7 @@
 		.brand-name { color: var(--text); font-weight: 700; }
 		.brand-role { color: var(--muted); font-weight: 400; }
 		.profile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+		.logout-button { padding: 7px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 		.avatar {
 			width: 32px;
 			height: 32px;
@@ -336,6 +337,7 @@
 		<div class="profile">
 			<span>Nombre del profesor</span>
 			<span class="avatar" aria-hidden="true">NP</span>
+			<button class="logout-button" id="demo-logout" type="button">Salir</button>
 		</div>
 	</header>
 
@@ -343,12 +345,7 @@
 		<aside class="sidebar" aria-label="Asignaturas del profesor">
 			<a class="sidebar-link" href="main.html">Panel principal</a>
 			<p class="side-label">Mis asignaturas</p>
-			<ul class="course-list">
-				<li aria-current="page"><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
-				<li><span class="course-name">Asignatura 2</span></li>
-				<li><span class="course-name">Asignatura 3</span></li>
-				<li><span class="course-name">Asignatura 4</span></li>
-			</ul>
+			<ul class="course-list" aria-label="Asignaturas"></ul>
 		</aside>
 
 		<main>
@@ -397,7 +394,6 @@
 
 		</main>
 	</div>
-	<script src="editor-store.js"></script>
-	<script src="asignatura-editor.js"></script>
+	<script type="module" src="asignatura-editor.js"></script>
 </body>
 </html>

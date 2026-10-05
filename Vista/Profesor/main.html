@@ -44,6 +44,7 @@
 		.brand-name { color: var(--text); font-weight: 700; }
 		.brand-role { color: var(--muted); font-weight: 400; }
 		.profile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+		.logout-button { padding: 7px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 		.avatar {
 			width: 32px;
 			height: 32px;
@@ -96,6 +97,18 @@
 			color: inherit;
 			text-decoration: none;
 		}
+		.assignment-management { margin-top: 30px; }
+		.assignment-create-form { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+		.assignment-create-form input, .assignment-row input { min-width: 0; padding: 9px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.assignment-create-form input { flex: 1 1 240px; }
+		.assignment-create-form button, .assignment-row button { padding: 9px 12px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--soft); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+		.assignment-management-list { display: grid; gap: 8px; }
+		.assignment-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 1fr); align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+		.assignment-row > a { color: var(--text); font-weight: 600; text-decoration: none; }
+		.assignment-row form { display: flex; gap: 8px; }
+		.assignment-row input { flex: 1; }
+		.assignment-status { min-height: 18px; margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+		.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 		.course-list a:hover { background: var(--soft); }
 
@@ -157,6 +170,7 @@
 			.stat { display: flex; align-items: center; justify-content: space-between; padding: 14px; }
 			.stat-label { margin: 0; }
 			.stat strong { font-size: 19px; }
+			.assignment-row { grid-template-columns: 1fr; gap: 8px; }
 		}
 	</style>
 </head>
@@ -170,6 +184,7 @@
 		<div class="profile">
 			<span>Nombre del profesor</span>
 			<span class="avatar" aria-hidden="true">NP</span>
+			<button class="logout-button" id="demo-logout" type="button">Salir</button>
 		</div>
 	</header>
 
@@ -177,18 +192,26 @@
 		<aside class="sidebar" id="asignaturas" aria-label="Asignaturas del profesor">
 			<a class="sidebar-link" href="#inicio" aria-current="page">Panel principal</a>
 			<p class="side-label">Mis asignaturas</p>
-			<ul class="course-list">
-				<li><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
-				<li><span class="course-name">Asignatura 2</span></li>
-				<li><span class="course-name">Asignatura 3</span></li>
-				<li><span class="course-name">Asignatura 4</span></li>
-			</ul>
+			<ul class="course-list" aria-label="Asignaturas"></ul>
 		</aside>
 
 		<main id="inicio">
 			<p class="eyebrow">Área del profesor</p>
 			<h1>Panel principal</h1>
 			<p class="intro">Resumen de tus asignaturas y contenidos de la videoteca.</p>
+
+			<section class="assignment-management" aria-labelledby="assignment-management-title">
+				<div class="section-heading">
+					<h2 id="assignment-management-title">Gestionar asignaturas</h2>
+				</div>
+				<form class="assignment-create-form" id="assignment-create-form">
+					<label class="visually-hidden" for="assignment-name-input">Nombre de la nueva asignatura</label>
+					<input id="assignment-name-input" name="title" maxlength="80" placeholder="Nombre de la asignatura" required>
+					<button type="submit">Agregar asignatura</button>
+				</form>
+				<div class="assignment-management-list" id="assignment-management-list"></div>
+				<p class="assignment-status" id="assignment-status" role="status" aria-live="polite"></p>
+			</section>
 
 			<section aria-labelledby="summary-title">
 				<div class="section-heading">
@@ -265,9 +288,6 @@
 			</section>
 		</main>
 	</div>
-	<script src="editor-store.js"></script>
-	<script>
-		document.querySelector("#course-nav-title").textContent = window.VideotecaStore.get().course.title;
-	</script>
+	<script type="module" src="course-manager.js"></script>
 </body>
 </html>

@@ -5,15 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio - Nombre de la Página</title>
   <link rel="stylesheet" href="styles.css">
-  	<script>
-	  // Comprobar si el usuario está autenticado
-	  const usuarioLogueado = localStorage.getItem("sesionIniciada");
-
-	  if (!usuarioLogueado) {
-		// Si NO ha iniciado sesión, lo mandamos al login de inmediato
-		window.location.href = "login.html";
-	  }
-	</script>
+    <script type="module">
+      const role = localStorage.getItem("videotecaDemoRole");
+      if (role !== "alumno") {
+      window.location.href = role === "profesor" ? "Vista/Profesor/main.html" : "login.html";
+      }
+    </script>
 	
 </head>
 <body class="index-body">
@@ -24,19 +21,14 @@
 	<button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
   </header>
 
-	<script>
-	  const btnLogout = document.getElementById('btn-logout');
-
-	  if (btnLogout) {
-		btnLogout.addEventListener('click', function () {
-		  // 1. Eliminamos el registro de sesión
-		  localStorage.removeItem('sesionIniciada');
-
-		  // 2. Redirigimos al login
-		  window.location.href = 'login.html';
-		});
-	  }
-	</script>
+  <script type="module">
+    document.querySelector("#btn-logout").addEventListener("click", () => {
+    localStorage.removeItem("videotecaDemoRole");
+    localStorage.removeItem("videotecaDemoEmail");
+    localStorage.removeItem("sesionIniciada");
+    window.location.href = "login.html";
+    });
+  </script>
 
   <!-- Layout Principal: Menú Izquierda + Contenido Central -->
   <div class="index-layout">

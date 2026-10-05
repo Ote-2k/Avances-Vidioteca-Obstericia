@@ -1,3 +1,7 @@
+import "./editor-store.js";
+
+await window.VideotecaStoreReady;
+
 (() => {
 	const resourceGrid = document.querySelector("#resource-grid");
 	const resourceCount = document.querySelector("#resource-count");
@@ -16,7 +20,6 @@
 		const data = window.VideotecaStore.get();
 		document.title = `${data.course.title} | Videoteca`;
 		courseTitle.textContent = data.course.title;
-		document.querySelector("#course-nav-title").textContent = data.course.title;
 		courseDescription.textContent = data.course.description;
 		const cover = document.querySelector("#course-cover");
 		cover.src = data.course.coverUrl;
@@ -78,7 +81,7 @@
 
 			const openLink = document.createElement("a");
 			openLink.className = "resource-open";
-			openLink.href = `recurso.html?recurso=${encodeURIComponent(id)}`;
+			openLink.href = `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(id)}`;
 			openLink.setAttribute("aria-label", `Abrir recurso ${resource.title}`);
 			openLink.append(preview, content);
 
@@ -107,6 +110,12 @@
 			resourceGrid.append(card);
 		});
 		courseSaveStatus.textContent = statusMessage;
+	}
+
+	if (window.VideotecaStore.isDemoMode()) {
+		courseSaveStatus.textContent = "Modo demo local: los cambios solo se guardan en este navegador.";
+	} else if (!window.VideotecaStore.getCloudStatus()) {
+		courseSaveStatus.textContent = "Firebase no está conectado; los cambios solo se guardarán en este navegador.";
 	}
 
 	function getMentionableResources() {
@@ -381,7 +390,7 @@
 	});
 
 	document.querySelector("#add-resource-button").addEventListener("click", () => {
-		window.location.href = "recurso.html?nuevo=1";
+		window.location.href = `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&nuevo=1`;
 	});
 
 	commentInput.addEventListener("input", () => updateCommentDraft(commentInput));
