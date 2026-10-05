@@ -2,16 +2,34 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    function ownsAssignment(assignmentId) {
+    function assignment(assignmentId) {
+      return firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)).data;
+    }
+
+    function teacherOwns(assignmentId) {
       return request.auth != null
-        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)).data.ownerUid == request.auth.uid;
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'profesor'
+        && assignment(assignmentId).ownerUid == request.auth.uid;
+    }
+
+    function studentCanRead(assignmentId) {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'alumno'
+        && assignment(assignmentId).published == true;
+    }
+
+    function studentCanReadResource(assignmentId, resourceId) {
+      return studentCanRead(assignmentId)
+        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)/recursos/$(resourceId)).data.isHidden == false;
     }
 
     match /videos/{assignmentId}/{resourceId}/{fileName} {
-      allow read, delete: if ownsAssignment(assignmentId);
-      allow create, update: if ownsAssignment(assignmentId)
-        && request.resource.size < 500 * 1024 * 1024
-        && request.resource.contentType.matches('video/.*');
+      allow read: if teacherOwns(assignmentId)
+        || studentCanReadResource(assignmentId, resourceId);
+      allow create, update: if teacherOwns(assignmentId)
+        && request.resource.size < 300 * 1024 * 1024
+        && request.resource.contentType == 'video/webm';
+      allow delete: if teacherOwns(assignmentId);
     }
   }
 }

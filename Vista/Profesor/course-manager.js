@@ -6,10 +6,10 @@ const createForm = document.querySelector("#assignment-create-form");
 const assignmentList = document.querySelector("#assignment-management-list");
 const assignmentCount = document.querySelector("#assignment-count");
 const assignmentStatus = document.querySelector("#assignment-status");
-if (store.isDemoMode()) {
-	assignmentStatus.textContent = "Modo demo local: las asignaturas y sus cambios solo existen en este navegador.";
-} else if (!store.getCloudStatus()) {
+if (!store.getCloudStatus()) {
 	assignmentStatus.textContent = "Inicia sesión con una cuenta Firebase y habilita Firestore para gestionar asignaturas.";
+} else {
+	assignmentStatus.textContent = "Asignaturas sincronizadas con Firebase.";
 }
 
 function assignmentUrl(id) {
@@ -46,15 +46,6 @@ async function renderAssignments() {
 		button.textContent = "Cambiar nombre";
 		form.append(input, button);
 		row.append(link, form);
-		if (store.isDemoMode()) {
-			const deleteButton = document.createElement("button");
-			deleteButton.type = "button";
-			deleteButton.className = "assignment-delete";
-			deleteButton.dataset.deleteAssignmentId = assignment.id;
-			deleteButton.dataset.assignmentTitle = assignment.title || "Asignatura sin nombre";
-			deleteButton.textContent = "Eliminar";
-			row.append(deleteButton);
-		}
 		assignmentList.append(row);
 	});
 }
@@ -90,28 +81,6 @@ assignmentList.addEventListener("submit", async (event) => {
 		await renderAssignments();
 	} catch (error) {
 		assignmentStatus.textContent = "No se pudo cambiar el nombre. Comprueba tu conexión y las reglas de Firestore.";
-		console.error(error);
-		button.disabled = false;
-	}
-});
-
-assignmentList.addEventListener("click", async (event) => {
-	const button = event.target.closest("[data-delete-assignment-id]");
-	if (!button) return;
-	const { deleteAssignmentId, assignmentTitle } = button.dataset;
-	const resourceCount = store.getAssignmentResourceCount(deleteAssignmentId);
-	const resourceMessage = resourceCount
-		? ` También se borrarán ${resourceCount} recursos y sus videos locales.`
-		: "";
-	if (!window.confirm(`¿Eliminar la asignatura “${assignmentTitle}”?${resourceMessage} Esta acción solo afecta los datos de demo de este navegador.`)) return;
-	button.disabled = true;
-	try {
-		await store.deleteAssignment(deleteAssignmentId);
-		assignmentStatus.textContent = `Asignatura “${assignmentTitle}” eliminada de este navegador.`;
-		await renderAssignments();
-		await store.refreshAssignmentNavigation();
-	} catch (error) {
-		assignmentStatus.textContent = "No se pudo eliminar la asignatura ni sus videos locales.";
 		console.error(error);
 		button.disabled = false;
 	}

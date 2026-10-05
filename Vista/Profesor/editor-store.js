@@ -1,4 +1,5 @@
 import { auth, db } from "../../firebase-config.js";
+import { signOut } from "firebase/auth";
 import {
 	addDoc,
 	collection,
@@ -15,77 +16,16 @@ import {
 
 window.VideotecaStoreReady = (async () => {
 	const assignmentId = new URLSearchParams(window.location.search).get("asignatura") || "asignatura-1";
-	const storageKey = `videoteca-profesor-edits-v1-${assignmentId}`;
-	const legacyStorageKey = "videoteca-profesor-edits-v1";
-	const assignmentsKey = "videoteca-profesor-assignments-v1";
-	const demoMode = localStorage.getItem("videotecaDemoRole") === "profesor";
 	const defaults = {
 		course: {
 			title: "Asignatura 1",
 			description: "Recursos y contenidos disponibles para esta asignatura.",
 			coverUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1600&q=80",
 			units: [{ id: "unidad-principal", name: "Unidad principal" }]
-		},
-		resources: {
-			introduccion: {
-				title: "Introducción a la asignatura",
-				unit: "Unidad 1",
-				duration: "12 min",
-				description: "Presentación de los objetivos, contenidos y organización de la asignatura.",
-				thumbnailUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80",
-				videoUrl: "../../video%20de%20prueba.mp4",
-				popups: [],
-				materials: [
-					{ title: "Guía de estudio", format: "PDF", description: "Orientaciones y contenidos principales de la asignatura.", url: "../../prueba.pdf" },
-					{ title: "Material complementario", format: "PDF", description: "Lecturas sugeridas para profundizar los temas de la unidad.", url: "../../prueba.pdf" }
-				]
-			},
-			"controles-prenatales": {
-				title: "Controles prenatales",
-				unit: "Unidad 1",
-				duration: "18 min",
-				description: "Revisión de los controles prenatales y su importancia en el seguimiento del embarazo.",
-				thumbnailUrl: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80",
-				videoUrl: "../../video%20de%20prueba.mp4",
-				popups: [],
-				materials: [
-					{ title: "Material complementario", format: "PDF", description: "Apuntes y contenidos de apoyo para revisar junto con el video.", url: "../../prueba.pdf" }
-				]
-			},
-			"trabajo-de-parto": {
-				title: "Signos y etapas del trabajo de parto",
-				unit: "Unidad 2",
-				duration: "24 min",
-				description: "Descripción de las señales de inicio y las etapas del trabajo de parto.",
-				thumbnailUrl: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=900&q=80",
-				videoUrl: "../../video%20de%20prueba.mp4",
-				popups: [],
-				materials: [
-					{ title: "Información de apoyo", format: "Lectura", description: "Señales de inicio y etapas del trabajo de parto.", url: "../../prueba.pdf" }
-				]
-			}
-		},
-		comments: {
-			course: [
-				{ id: "course-comment-maria", author: "María P.", initials: "MP", date: "Hace 2 horas", text: "¿La guía de estudio incluye los puntos clave del primer video?" },
-				{ id: "course-comment-javier", author: "Javier R.", initials: "JR", date: "Ayer", text: "El material complementario me ayudó a repasar la unidad." }
-			],
-			introduccion: [
-				{ id: "intro-comment-maria", author: "María P.", initials: "MP", date: "Hace 2 horas", text: "¿Podrías explicar un poco más este punto en la próxima clase?" },
-				{ id: "intro-comment-javier", author: "Javier R.", initials: "JR", date: "Ayer", text: "Gracias, el material de apoyo me ayudó a entender mejor el tema." }
-			],
-			"controles-prenatales": [
-				{ id: "prenatal-comment-maria", author: "María P.", initials: "MP", date: "Hace 2 horas", text: "¿Podrías explicar un poco más este punto en la próxima clase?" },
-				{ id: "prenatal-comment-javier", author: "Javier R.", initials: "JR", date: "Ayer", text: "Gracias, el material de apoyo me ayudó a entender mejor el tema." }
-			],
-			"trabajo-de-parto": [
-				{ id: "labor-comment-maria", author: "MP", initials: "MP", date: "Hace 2 horas", text: "¿Podrías explicar un poco más este punto en la próxima clase?" },
-				{ id: "labor-comment-javier", author: "Javier R.", initials: "JR", date: "Ayer", text: "Gracias, el material de apoyo me ayudó a entender mejor el tema." }
-			]
 		}
 	};
-	const initialResources = assignmentId === "asignatura-1" ? defaults.resources : {};
-	const initialComments = assignmentId === "asignatura-1" ? defaults.comments : { course: [] };
+	const initialResources = {};
+	const initialComments = { course: [] };
 
 	function normalizeData(nextData) {
 		const savedUnits = Array.isArray(nextData.course.units) ? nextData.course.units : [];
@@ -96,100 +36,37 @@ window.VideotecaStoreReady = (async () => {
 			const assignedUnit = units.find((unit) => unit.id === resource.unitId)
 				|| unitsByName.get(String(resource.unit || "").trim().toLocaleLowerCase())
 				|| primary;
-			return [id, { ...resource, unitId: assignedUnit.id, unit: assignedUnit.name }];
+			return [id, { ...resource, isHidden: resource.isHidden === true, unitId: assignedUnit.id, unit: assignedUnit.name }];
 		}));
 		return { ...nextData, course: { ...nextData.course, units }, resources };
 	}
 
-	function readLocal() {
-		let saved = {};
-		try {
-			saved = JSON.parse(localStorage.getItem(storageKey) || (assignmentId === "asignatura-1" ? localStorage.getItem(legacyStorageKey) : null) || "{}");
-		} catch {
-			saved = {};
-		}
-
-		const deletedResources = new Set(saved.deletedResources || []);
+	function initialData() {
+		const deletedResources = new Set();
 		const resources = {};
-		const previousSampleVideo = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 		Object.entries(initialResources).forEach(([id, resource]) => {
-			if (deletedResources.has(id)) return;
-			const savedResource = saved.resources?.[id] || {};
-			const mergedResource = { ...resource, ...savedResource };
+			const mergedResource = { ...resource };
 			mergedResource.materials = (mergedResource.materials || []).map((material, index) => ({
 				...material,
 				id: material.id || `${id}-document-${index + 1}`
 			}));
 			mergedResource.popups = Array.isArray(mergedResource.popups) ? mergedResource.popups : [];
 			resources[id] = mergedResource;
-			if (savedResource.videoUrl === previousSampleVideo && !savedResource.videoBlobId) {
-				resources[id].videoUrl = resource.videoUrl;
-			}
-		});
-		Object.entries(saved.resources || {}).forEach(([id, resource]) => {
-			if (initialResources[id] || deletedResources.has(id)) return;
-			resources[id] = {
-				...resource,
-				materials: (resource.materials || []).map((material, index) => ({
-					...material,
-					id: material.id || `${id}-document-${index + 1}`
-				})),
-				popups: Array.isArray(resource.popups) ? resource.popups : []
-			};
 		});
 
 		return normalizeData({
-			course: { ...defaults.course, ...(saved.course || {}) },
+			course: defaults.course,
 			resources,
-			comments: { ...initialComments, ...(saved.comments || {}) },
+			comments: initialComments,
 			deletedResources: [...deletedResources]
 		});
 	}
 
 	const assignmentRef = doc(db, "asignaturas", assignmentId);
-	let data = readLocal();
+	let data = initialData();
 	let cloudReady = false;
+	let currentRole = "";
 	let persistQueue = Promise.resolve();
-
-	function readLocalAssignments() {
-		try {
-			return JSON.parse(localStorage.getItem(assignmentsKey) || "[]")
-				.filter((item) => item.id !== "asignatura-1" || item.title !== "Asignatura 1");
-		} catch {
-			return [];
-		}
-	}
-
-	function writeLocalAssignments(assignments) {
-		localStorage.setItem(assignmentsKey, JSON.stringify(assignments));
-	}
-
-	async function deleteLocalAssignmentVideos(id, resources) {
-		if (!window.indexedDB) return;
-		const database = await new Promise((resolve, reject) => {
-			const request = indexedDB.open("videoteca-profesor-media-v1", 1);
-			request.onupgradeneeded = () => request.result.createObjectStore("videos");
-			request.onsuccess = () => resolve(request.result);
-			request.onerror = () => reject(request.error);
-		});
-		if (!database.objectStoreNames.contains("videos")) {
-			database.close();
-			return;
-		}
-		await new Promise((resolve, reject) => {
-			const transaction = database.transaction("videos", "readwrite");
-			const videos = transaction.objectStore("videos");
-			const keysRequest = videos.getAllKeys();
-			const legacyVideoIds = new Set(Object.entries(resources).flatMap(([resourceId, resource]) => [resourceId, resource.videoBlobId].filter(Boolean)));
-			keysRequest.onsuccess = () => keysRequest.result.forEach((key) => {
-				if (String(key).startsWith(`${id}-`) || legacyVideoIds.has(String(key))) videos.delete(key);
-			});
-			keysRequest.onerror = () => reject(keysRequest.error);
-			transaction.oncomplete = resolve;
-			transaction.onerror = () => reject(transaction.error);
-		});
-		database.close();
-	}
 
 	function notifySync(type, error = null) {
 		if (type === "error") {
@@ -201,6 +78,10 @@ window.VideotecaStoreReady = (async () => {
 	}
 
 	async function persist(snapshot) {
+		if (currentRole === "alumno") {
+			await updateDoc(assignmentRef, { comments: snapshot.comments, updatedAt: serverTimestamp() });
+			return;
+		}
 		await setDoc(assignmentRef, { course: snapshot.course, comments: snapshot.comments, ownerUid: auth.currentUser.uid, updatedAt: serverTimestamp() }, { merge: true });
 		const resourcesRef = collection(assignmentRef, "recursos");
 		const storedResources = await getDocs(resourcesRef);
@@ -217,42 +98,59 @@ window.VideotecaStoreReady = (async () => {
 
 	function write(nextData) {
 		data = nextData;
-		localStorage.setItem(storageKey, JSON.stringify(data));
 		if (!cloudReady) return;
 		const snapshot = JSON.parse(JSON.stringify(data));
 		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => notifySync("saved"))
 			.catch((error) => notifySync("error", error));
 	}
 
+	function requireTeacher() {
+		if (currentRole !== "profesor") throw new Error("Solo un profesor puede editar el contenido.");
+	}
+
 	async function initialize() {
 		try {
-			if (demoMode) {
-				if (window.location.pathname.endsWith("/main.html")) {
-					data = { course: defaults.course, resources: {}, comments: { course: [] }, deletedResources: [] };
-					return;
-				}
-				const assignment = readLocalAssignments().find((item) => item.id === assignmentId);
-				if (!assignment) {
-					window.location.href = "main.html";
-					return;
-				}
-				if (assignmentId !== "asignatura-1" && !localStorage.getItem(storageKey)) {
-					data = { course: { ...defaults.course, title: assignment.title }, resources: {}, comments: { course: [] }, deletedResources: [] };
-				} else {
-					data.course = { ...data.course, title: assignment.title };
-				}
-				localStorage.setItem(storageKey, JSON.stringify(data));
-				return;
-			}
 			await auth.authStateReady();
 			if (!auth.currentUser) {
 				window.location.href = "../../login.html";
 				return;
 			}
+			const profile = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
+			currentRole = profile.exists() ? profile.data().role : "";
+			if (! ["profesor", "alumno"].includes(currentRole)) {
+				await signOut(auth);
+				window.location.href = "../../login.html";
+				return;
+			}
+			const isDashboard = window.location.pathname.endsWith("/main.html");
+			const isStudentHome = window.location.pathname.endsWith("/index.html");
+			if (isDashboard) {
+				if (currentRole !== "profesor") {
+					window.location.replace("../../index.html");
+					return;
+				}
+				data = { course: defaults.course, resources: {}, comments: { course: [] }, deletedResources: [] };
+				cloudReady = currentRole === "profesor";
+				return;
+			}
+			if (isStudentHome) {
+				if (currentRole !== "alumno") window.location.href = "Vista/Profesor/main.html";
+				data = { course: defaults.course, resources: {}, comments: { course: [] }, deletedResources: [] };
+				cloudReady = currentRole === "alumno";
+				return;
+			}
 			const assignmentSnapshot = await getDoc(assignmentRef);
 			if (assignmentSnapshot.exists()) {
 				const saved = assignmentSnapshot.data();
-				const resourcesSnapshot = await getDocs(collection(assignmentRef, "recursos"));
+				if (currentRole === "alumno" && !saved.published) {
+					window.location.href = "../../index.html";
+					return;
+				}
+				const resourcesRef = collection(assignmentRef, "recursos");
+				const resourcesQuery = currentRole === "alumno"
+					? query(resourcesRef, where("isHidden", "==", false))
+					: resourcesRef;
+				const resourcesSnapshot = await getDocs(resourcesQuery);
 				data = {
 					course: { ...defaults.course, ...(saved.course || {}) },
 					resources: Object.fromEntries(resourcesSnapshot.docs.map((item) => [item.id, item.data()])),
@@ -260,21 +158,54 @@ window.VideotecaStoreReady = (async () => {
 					deletedResources: []
 				};
 				data = normalizeData(data);
-			} else if (assignmentId !== "asignatura-1") {
-				data = {
-					course: { ...defaults.course, title: "Nueva asignatura" },
-					resources: {}, comments: { course: [] }, deletedResources: []
-				};
-				await setDoc(assignmentRef, { course: data.course, comments: data.comments, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
-			} else {
-				await setDoc(assignmentRef, { course: data.course, comments: data.comments, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
+				if (currentRole === "profesor") {
+					const migration = writeBatch(db);
+					let hasMigration = false;
+					if (saved.published === undefined) {
+						migration.update(assignmentRef, { published: true });
+						hasMigration = true;
+					}
+					if (!Array.isArray(saved.course?.units)) {
+						migration.update(assignmentRef, { "course.units": data.course.units });
+						hasMigration = true;
+					}
+					resourcesSnapshot.docs.forEach((item) => {
+						const resource = item.data();
+						if (resource.isHidden === undefined || resource.unitId === undefined) {
+						migration.set(item.ref, data.resources[item.id], { merge: true });
+							hasMigration = true;
+						}
+					});
+					if (hasMigration) await migration.commit();
+				}
+			} else if (currentRole === "profesor" && assignmentId === "asignatura-1") {
+				data = initialData();
+				await setDoc(assignmentRef, {
+					course: data.course,
+					comments: data.comments,
+					ownerUid: auth.currentUser.uid,
+					published: true,
+					createdAt: serverTimestamp()
+				});
 				const batch = writeBatch(db);
 				const resourcesRef = collection(assignmentRef, "recursos");
 				Object.entries(data.resources).forEach(([id, resource]) => batch.set(doc(resourcesRef, id), resource));
 				await batch.commit();
+			} else {
+				if (currentRole === "alumno") window.location.href = "../../index.html";
+				else {
+					data = { course: { ...defaults.course, title: "Nueva asignatura" }, resources: {}, comments: { course: [] }, deletedResources: [] };
+					await setDoc(assignmentRef, {
+						course: data.course,
+						comments: data.comments,
+						ownerUid: auth.currentUser.uid,
+						published: true,
+						createdAt: serverTimestamp()
+					});
+				}
+				return;
 			}
 			cloudReady = true;
-			localStorage.setItem(storageKey, JSON.stringify(data));
 		} catch (error) {
 			console.error("No se pudo cargar la asignatura desde Firebase.", error);
 			notifySync("error", error);
@@ -287,82 +218,68 @@ window.VideotecaStoreReady = (async () => {
 		get: () => data,
 		getAssignmentId: () => assignmentId,
 		getUnits: () => data.course.units,
+		getRole: () => currentRole,
+		isTeacher: () => currentRole === "profesor",
 		refreshAssignmentNavigation: () => renderAssignmentNavigation(),
 		getCloudStatus: () => cloudReady,
-		isDemoMode: () => demoMode,
 		flush: () => persistQueue,
 		async getAssignments() {
-			if (demoMode) return readLocalAssignments();
 			if (!cloudReady) return [{ id: assignmentId, ...data.course }];
 			try {
-				const assignments = await getDocs(query(collection(db, "asignaturas"), where("ownerUid", "==", auth.currentUser.uid)));
+				const assignmentsQuery = currentRole === "alumno"
+					? query(collection(db, "asignaturas"), where("published", "==", true))
+					: query(collection(db, "asignaturas"), where("ownerUid", "==", auth.currentUser.uid));
+				const assignments = await getDocs(assignmentsQuery);
 				return assignments.docs.map((item) => ({ id: item.id, ...(item.data().course || {}) }));
 			} catch (error) {
 				notifySync("error", error);
 				return [{ id: assignmentId, ...data.course }];
 			}
 		},
-		getAssignmentResourceCount(id) {
-			if (!demoMode) return 0;
-			try {
-				const saved = JSON.parse(localStorage.getItem(`videoteca-profesor-edits-v1-${id}`) || "{}");
-				return Object.keys(saved.resources || {}).length;
-			} catch {
-				return 0;
-			}
-		},
-		async deleteAssignment(id) {
-			if (!demoMode) throw new Error("La eliminación de asignaturas solo está disponible en el modo demo local.");
-			const assignments = readLocalAssignments();
-			const assignment = assignments.find((item) => item.id === id);
-			if (!assignment) return false;
-			let saved = {};
-			try {
-				saved = JSON.parse(localStorage.getItem(`videoteca-profesor-edits-v1-${id}`) || "{}");
-			} catch {
-				saved = {};
-			}
-			await deleteLocalAssignmentVideos(id, saved.resources || {});
-			writeLocalAssignments(assignments.filter((item) => item.id !== id));
-			localStorage.removeItem(`videoteca-profesor-edits-v1-${id}`);
-			return true;
+		async getStudentAssignment(id) {
+			if (currentRole !== "alumno") throw new Error("Solo los alumnos pueden consultar esta vista.");
+			const target = doc(db, "asignaturas", id);
+			const snapshot = await getDoc(target);
+			if (!snapshot.exists() || snapshot.data().published !== true) return null;
+			const resourcesSnapshot = await getDocs(query(collection(target, "recursos"), where("isHidden", "==", false)));
+			const saved = snapshot.data();
+			return normalizeData({
+				course: { ...defaults.course, ...(saved.course || {}) },
+				resources: Object.fromEntries(resourcesSnapshot.docs.map((item) => [item.id, item.data()])),
+				comments: { ...initialComments, ...(saved.comments || {}) },
+				deletedResources: []
+			});
 		},
 		async createAssignment(title) {
-			if (demoMode) {
-				const id = `asignatura-${Date.now().toString(36)}`;
-				writeLocalAssignments([...readLocalAssignments(), { id, title }]);
-				return id;
-			}
-			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas de Firestore.");
+			if (currentRole !== "profesor") throw new Error("Solo un profesor puede crear asignaturas.");
+			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas.");
 			const course = { ...defaults.course, title, units: [{ id: "unidad-principal", name: "Unidad principal" }] };
-			const created = await addDoc(collection(db, "asignaturas"), { course, comments: { course: [] }, ownerUid: auth.currentUser.uid, createdAt: serverTimestamp() });
+			const created = await addDoc(collection(db, "asignaturas"), {
+				course,
+				comments: { course: [] },
+				ownerUid: auth.currentUser.uid,
+				published: true,
+				createdAt: serverTimestamp()
+			});
 			return created.id;
 		},
 		async renameAssignment(id, title) {
-			if (demoMode) {
-				writeLocalAssignments(readLocalAssignments().map((item) => item.id === id ? { ...item, title } : item));
-				if (id === assignmentId) {
-					data.course = { ...data.course, title };
-					localStorage.setItem(storageKey, JSON.stringify(data));
-				}
-				return;
-			}
-			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas de Firestore.");
+			if (currentRole !== "profesor") throw new Error("Solo un profesor puede renombrar asignaturas.");
+			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas.");
 			const target = doc(db, "asignaturas", id);
 			const saved = await getDoc(target);
 			if (!saved.exists()) throw new Error("La asignatura ya no existe.");
 			await updateDoc(target, { "course.title": title, updatedAt: serverTimestamp() });
-			if (id === assignmentId) {
-				data.course = { ...data.course, title };
-				localStorage.setItem(storageKey, JSON.stringify(data));
-			}
+			if (id === assignmentId) data.course = { ...data.course, title };
 		},
 		saveCourse(updates) {
+			requireTeacher();
 			data.course = { ...data.course, ...updates };
 			write(data);
 			return data;
 		},
 		createUnit(name) {
+			requireTeacher();
 			const normalizedName = name.trim().toLocaleLowerCase();
 			if (data.course.units.some((unit) => unit.name.trim().toLocaleLowerCase() === normalizedName)) {
 				throw new Error("Ya existe una unidad con ese nombre.");
@@ -373,6 +290,7 @@ window.VideotecaStoreReady = (async () => {
 			return unit;
 		},
 		renameUnit(id, name) {
+			requireTeacher();
 			if (id === "unidad-principal") throw new Error("La Unidad principal no se puede renombrar.");
 			const normalizedName = name.trim().toLocaleLowerCase();
 			if (data.course.units.some((unit) => unit.id !== id && unit.name.trim().toLocaleLowerCase() === normalizedName)) {
@@ -388,6 +306,7 @@ window.VideotecaStoreReady = (async () => {
 			return true;
 		},
 		deleteUnit(id) {
+			requireTeacher();
 			if (id === "unidad-principal") return false;
 			const unit = data.course.units.find((item) => item.id === id);
 			if (!unit) return false;
@@ -403,6 +322,7 @@ window.VideotecaStoreReady = (async () => {
 			return true;
 		},
 		moveResourceToUnit(resourceId, unitId) {
+			requireTeacher();
 			const resource = data.resources[resourceId];
 			const unit = data.course.units.find((item) => item.id === unitId);
 			if (!resource || !unit) return false;
@@ -412,12 +332,14 @@ window.VideotecaStoreReady = (async () => {
 			return true;
 		},
 		saveResource(id, updates) {
+			requireTeacher();
 			if (!data.resources[id]) return null;
 			data.resources[id] = { ...data.resources[id], ...updates };
 			write(data);
 			return data;
 		},
 		createResource(resource) {
+			requireTeacher();
 			const id = `recurso-${Date.now().toString(36)}`;
 			const assignedUnit = data.course.units.find((unit) => unit.id === resource.unitId) || data.course.units[0];
 			data.resources[id] = { ...resource, unitId: assignedUnit.id, unit: assignedUnit.name, isHidden: false };
@@ -425,12 +347,14 @@ window.VideotecaStoreReady = (async () => {
 			return id;
 		},
 		setResourceHidden(id, isHidden) {
+			requireTeacher();
 			if (!data.resources[id]) return false;
 			data.resources[id].isHidden = isHidden;
 			write(data);
 			return true;
 		},
 		deleteResource(id) {
+			requireTeacher();
 			if (!data.resources[id]) return false;
 			delete data.resources[id];
 			data.deletedResources = [...new Set([...data.deletedResources, id])];
@@ -438,12 +362,13 @@ window.VideotecaStoreReady = (async () => {
 			return true;
 		},
 		addComment(scope, comment) {
-			const newComment = { ...comment, id: `comentario-${Date.now().toString(36)}` };
+			const newComment = { ...comment, authorUid: auth.currentUser.uid, id: `comentario-${Date.now().toString(36)}` };
 			data.comments[scope] = [...(data.comments[scope] || []), newComment];
 			write(data);
 			return newComment;
 		},
 		deleteComment(scope, id) {
+			requireTeacher();
 			if (!data.comments[scope]) return false;
 			const removedIds = new Set([id]);
 			let foundReply;
@@ -481,11 +406,9 @@ window.VideotecaStoreReady = (async () => {
 	}
 
 	await renderAssignmentNavigation();
-	document.querySelectorAll("#demo-logout").forEach((button) => {
-		button.addEventListener("click", () => {
-			localStorage.removeItem("videotecaDemoRole");
-			localStorage.removeItem("videotecaDemoEmail");
-			localStorage.removeItem("sesionIniciada");
+	document.querySelectorAll("#logout-button").forEach((button) => {
+		button.addEventListener("click", async () => {
+			await signOut(auth);
 			window.location.href = "../../login.html";
 		});
 	});

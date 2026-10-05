@@ -18,6 +18,11 @@ await window.VideotecaStoreReady;
 	const mentionResourceOptions = document.querySelector("#mention-resource-options");
 	const commentDrafts = new WeakMap();
 	let isEditing = false;
+	const isTeacher = window.VideotecaStore.isTeacher();
+	document.body.classList.toggle("student-view", !isTeacher);
+	document.querySelector("#profile-role").textContent = isTeacher ? "Profesor" : "Alumno";
+	document.querySelector("#profile-avatar").textContent = isTeacher ? "P" : "A";
+	document.querySelector(".brand-role").textContent = isTeacher ? "· Profesor" : "· Alumno";
 
 	function renderUnitManager(units) {
 		unitManager.hidden = !isEditing;
@@ -199,10 +204,8 @@ await window.VideotecaStoreReady;
 		courseSaveStatus.textContent = statusMessage;
 	}
 
-	if (window.VideotecaStore.isDemoMode()) {
-		courseSaveStatus.textContent = "Modo demo local: los cambios solo se guardan en este navegador.";
-	} else if (!window.VideotecaStore.getCloudStatus()) {
-		courseSaveStatus.textContent = "Firebase no está conectado; los cambios solo se guardarán en este navegador.";
+	if (!window.VideotecaStore.getCloudStatus()) {
+		courseSaveStatus.textContent = "No se pudo conectar con Firebase. Comprueba el acceso del profesor.";
 	}
 
 	function getMentionableResources() {
@@ -403,9 +406,10 @@ await window.VideotecaStoreReady;
 		const key = field === courseTitle ? "title" : "description";
 		const value = field.textContent.trim();
 		window.VideotecaStore.saveCourse({ [key]: value || course[key] });
-		renderCourse("Cambios guardados en este navegador.");
+		renderCourse("Cambios sincronizados con Firebase.");
 	}
 	function setEditing(value) {
+		if (!isTeacher) return;
 		isEditing = value;
 		document.body.classList.toggle("editing", isEditing);
 		const button = document.querySelector("#edit-course-button");

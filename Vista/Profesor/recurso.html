@@ -119,6 +119,11 @@
 		body.editing-resource .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
 		body.resource-creation-pending .editable:empty::before { color: var(--muted); content: attr(data-placeholder); }
 		body.resource-creation-pending .comments-section { display: none; }
+		body.student-view #edit-resource-button,
+		body.student-view .video-source-editor,
+		body.student-view .editor-action-menu,
+		body.student-view .comments-section,
+		body.student-view .comment-remove { display: none !important; }
 		.video-attachment { margin: -6px 0 14px; }
 		.video-attachment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 		.video-attachment-heading h2 { font-size: 14px; }
@@ -398,9 +403,9 @@
 			<span class="brand-role">· Profesor</span>
 		</div>
 		<div class="profile">
-			<span>Nombre del profesor</span>
-			<span class="avatar" aria-hidden="true">NP</span>
-			<button class="logout-button" id="demo-logout" type="button">Salir</button>
+			<span id="profile-role">Profesor</span>
+			<span class="avatar" id="profile-avatar" aria-hidden="true">P</span>
+			<button class="logout-button" id="logout-button" type="button">Salir</button>
 		</div>
 	</header>
 
@@ -435,15 +440,14 @@
 								<input id="video-url-input" type="text" autocomplete="url" placeholder="https://...">
 							</div>
 							<button type="button" id="save-video-url-button">Adjuntar URL</button>
-							<button type="button" id="use-sample-video-button">Usar video de prueba</button>
 						</div>
 					</div>
 					<div class="source-panel" id="file-source-panel" hidden>
 						<div class="source-row">
-							<input id="replace-video-input" type="file" accept="video/mp4,video/webm,video/ogg">
+							<input id="replace-video-input" type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v">
 							<label class="video-file-button" for="replace-video-input">Elegir y subir video</label>
 						</div>
-						<p class="video-hint">El archivo se guarda en este navegador para este prototipo.</p>
+						<p class="video-hint">El archivo se convierte a WebM en este equipo y se guarda en Firebase Storage.</p>
 					</div>
 				</div>
 			</section>

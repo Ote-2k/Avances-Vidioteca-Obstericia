@@ -298,6 +298,12 @@
 		.cover-change-btn { position: absolute; top: 12px; right: 12px; }
 		body.editing .add-resource-btn, body.editing .cover-change-btn { display: inline-flex; }
 		body.editing .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
+		body.student-view #edit-course-button,
+		body.student-view .add-resource-btn,
+		body.student-view .cover-change-btn,
+		body.student-view .unit-manager,
+		body.student-view .resource-menu,
+		body.student-view .comment-remove { display: none !important; }
 		.cover-file-input { display: none; }
 		.resource-card { position: relative; }
 		.resource-open { display: block; color: inherit; text-decoration: none; }
@@ -365,9 +371,9 @@
 			<span class="brand-role">· Profesor</span>
 		</div>
 		<div class="profile">
-			<span>Nombre del profesor</span>
-			<span class="avatar" aria-hidden="true">NP</span>
-			<button class="logout-button" id="demo-logout" type="button">Salir</button>
+			<span id="profile-role">Profesor</span>
+			<span class="avatar" id="profile-avatar" aria-hidden="true">P</span>
+			<button class="logout-button" id="logout-button" type="button">Salir</button>
 		</div>
 	</header>
 

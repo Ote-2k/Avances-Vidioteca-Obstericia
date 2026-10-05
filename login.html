@@ -56,7 +56,6 @@
           <button type="submit" class="btn-submit">Acceder</button>
 
         </form>
-        <p class="login-subtitle">Demo local: profesor@videoteca.demo / Profesor123! · alumno@videoteca.demo / Alumno123!</p>
         <p id="login-status" role="status" aria-live="polite"></p>
 
       </div>
@@ -65,31 +64,59 @@
   </div>
 
   <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from "firebase/auth";
+    import { doc, getDoc } from "firebase/firestore";
+
     const form = document.querySelector("#login-form");
     const status = document.querySelector("#login-status");
-    const demoAccounts = {
-      "profesor@videoteca.demo": { password: "Profesor123!", role: "profesor" },
-      "alumno@videoteca.demo": { password: "Alumno123!", role: "alumno" }
-    };
-    const currentRole = localStorage.getItem("videotecaDemoRole");
-    if (currentRole === "profesor") window.location.href = "Vista/Profesor/main.html";
-    if (currentRole === "alumno") window.location.href = "index.html";
+    const emailInput = form.querySelector("#email");
+    const passwordInput = form.querySelector("#password");
 
-    form.addEventListener("submit", (event) => {
+    async function redirectByRole(user) {
+      const profile = await getDoc(doc(db, "usuarios", user.uid));
+      const role = profile.exists() ? profile.data().role : "";
+      if (role === "profesor") window.location.href = "Vista/Profesor/main.html";
+      else if (role === "alumno") window.location.href = "index.html";
+      else {
+        await signOut(auth);
+        status.textContent = `Esta cuenta no tiene rol configurado. Añade usuarios/${user.uid} en Firestore con role: profesor o alumno.`;
+      }
+    }
+
+    await auth.authStateReady();
+    if (auth.currentUser) await redirectByRole(auth.currentUser);
+
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = form.querySelector("button[type=submit]");
       button.disabled = true;
-      const email = form.elements.email.value.trim().toLowerCase();
-      const account = demoAccounts[email];
-      if (!account || form.elements.password.value !== account.password) {
-        status.textContent = "Correo o contraseña incorrectos.";
+      status.textContent = "Verificando acceso...";
+      try {
+        const credential = await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
+        await redirectByRole(credential.user);
+      } catch (error) {
+        status.textContent = error.code === "auth/invalid-credential"
+          ? "Correo o contraseña incorrectos."
+          : "No se pudo iniciar sesión. Comprueba la cuenta y la conexión con Firebase.";
         button.disabled = false;
+      }
+    });
+
+    document.querySelector(".forgot-password a").addEventListener("click", async (event) => {
+      event.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) {
+        status.textContent = "Escribe tu correo para solicitar el restablecimiento de contraseña.";
+        emailInput.focus();
         return;
       }
-      localStorage.setItem("videotecaDemoRole", account.role);
-      localStorage.setItem("videotecaDemoEmail", email);
-      localStorage.setItem("sesionIniciada", "true");
-      window.location.href = account.role === "profesor" ? "Vista/Profesor/main.html" : "index.html";
+      try {
+        await sendPasswordResetEmail(auth, email);
+        status.textContent = "Si la cuenta existe, recibirás un correo para restablecer la contraseña.";
+      } catch {
+        status.textContent = "No se pudo enviar el correo de restablecimiento.";
+      }
     });
   </script>
 

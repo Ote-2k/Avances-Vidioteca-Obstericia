@@ -6,21 +6,50 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function ownsAssignment(assignmentId) {
+    function roleIs(role) {
       return signedIn()
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == role;
+    }
+
+    function teacherOwns(assignmentId) {
+      return roleIs('profesor')
         && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.ownerUid == request.auth.uid;
     }
 
+    function studentCanRead(assignmentId) {
+      return roleIs('alumno')
+        && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.published == true;
+    }
+
+    function onlyAppendedComment() {
+      let oldComments = resource.data.comments.course;
+      let newComments = request.resource.data.comments.course;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'updatedAt'])
+        && request.resource.data.comments.diff(resource.data.comments).affectedKeys().hasOnly(['course'])
+        && newComments.size() == oldComments.size() + 1
+        && newComments[newComments.size() - 1].authorUid == request.auth.uid;
+    }
+
+    match /usuarios/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
     match /asignaturas/{assignmentId} {
-      allow get, list: if signedIn() && resource.data.ownerUid == request.auth.uid;
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if signedIn()
-        && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == resource.data.ownerUid;
-      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow get, list: if teacherOwns(assignmentId)
+        || (roleIs('alumno') && resource.data.published == true);
+      allow create: if roleIs('profesor')
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.published is bool;
+      allow update: if teacherOwns(assignmentId)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+        || (roleIs('alumno') && resource.data.published == true && onlyAppendedComment());
+      allow delete: if teacherOwns(assignmentId);
 
       match /recursos/{resourceId} {
-        allow read, create, update, delete: if ownsAssignment(assignmentId);
+        allow read: if teacherOwns(assignmentId)
+          || (studentCanRead(assignmentId) && resource.data.isHidden == false);
+        allow create, update, delete: if teacherOwns(assignmentId);
       }
     }
   }
