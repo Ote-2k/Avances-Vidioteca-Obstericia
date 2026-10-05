@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Asignatura 1 | Videoteca</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--page: #f5f5f4;
+			--surface: #ffffff;
+			--line: #e5e5e4;
+			--text: #292927;
+			--muted: #777773;
+			--soft: #f0f0ee;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-width: 320px;
+			min-height: 100vh;
+			background: var(--page);
+			color: var(--text);
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 14px;
+		}
+
+		.topbar {
+			height: 64px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 32px;
+			background: var(--surface);
+			border-bottom: 1px solid var(--line);
+		}
+
+		.brand { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+		.brand img { width: 36px; height: 36px; object-fit: contain; }
+		.brand-name { color: var(--text); font-weight: 700; }
+		.brand-role { color: var(--muted); font-weight: 400; }
+		.profile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+		.avatar {
+			width: 32px;
+			height: 32px;
+			display: grid;
+			place-items: center;
+			border: 1px solid var(--line);
+			border-radius: 50%;
+			background: var(--soft);
+			color: var(--text);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.layout { min-height: calc(100vh - 64px); display: flex; }
+		.sidebar {
+			width: 260px;
+			flex: 0 0 260px;
+			padding: 28px 18px;
+			background: var(--surface);
+			border-right: 1px solid var(--line);
+		}
+
+		.sidebar-link {
+			display: block;
+			margin-bottom: 26px;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: #555550;
+			text-decoration: none;
+		}
+
+		.side-label {
+			margin: 0 0 10px;
+			color: var(--muted);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: .06em;
+			text-transform: uppercase;
+		}
+
+		.course-list { list-style: none; margin: 0; padding: 0; }
+		.course-list li { margin-top: 4px; border-radius: 4px; color: #555550; }
+		.course-list a,
+		.course-list .course-name {
+			display: block;
+			padding: 11px 12px;
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+		}
+		.course-list li[aria-current="page"] a { background: var(--soft); color: var(--text); font-weight: 700; }
+
+		main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 32px 40px 48px; }
+		.breadcrumb { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+		.breadcrumb a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+		.course-cover {
+			width: 100%;
+			aspect-ratio: 3.2 / 1;
+			min-height: 150px;
+			max-height: 270px;
+			margin-bottom: 24px;
+			border-radius: 4px;
+			background: var(--soft);
+			object-fit: cover;
+			object-position: center 42%;
+		}
+		.course-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 8px;
+		}
+		h1 { margin: 0; font-size: 28px; font-weight: 600; }
+		.edit-course-btn {
+			padding: 9px 14px;
+			border: 1px solid #f0c28f;
+			border-radius: 4px;
+			background: #fff1df;
+			color: var(--text);
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.edit-course-btn:hover { background: #ffe6c4; }
+		.save-status { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+		.course-description { margin: 8px 0 30px; color: var(--muted); }
+		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+		h2 { margin: 0; font-size: 17px; font-weight: 600; }
+		.resource-count { color: var(--muted); font-size: 13px; }
+		.resource-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+		.resource-card {
+			overflow: hidden;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 4px;
+			color: inherit;
+			text-decoration: none;
+			transition: border-color .15s ease, transform .15s ease;
+		}
+		.resource-card:hover { border-color: #c9a77f; transform: translateY(-2px); }
+		.resource-open:focus-visible { outline: 2px solid #9b6a31; outline-offset: 3px; }
+		.video-preview { position: relative; aspect-ratio: 16 / 9; background: var(--soft); }
+		.video-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+		.play-mark {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 42px;
+			height: 42px;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, .92);
+			transform: translate(-50%, -50%);
+		}
+		.play-mark::after {
+			position: absolute;
+			top: 12px;
+			left: 17px;
+			width: 0;
+			height: 0;
+			border-top: 9px solid transparent;
+			border-bottom: 9px solid transparent;
+			border-left: 12px solid var(--text);
+			content: "";
+		}
+		.duration {
+			position: absolute;
+			right: 8px;
+			bottom: 8px;
+			padding: 4px 6px;
+			border-radius: 3px;
+			background: rgba(30, 30, 30, .82);
+			color: #fff;
+			font-size: 11px;
+		}
+		.resource-content { padding: 16px; }
+		.resource-title { margin: 0 0 7px; font-size: 15px; font-weight: 600; }
+		.resource-meta { margin: 0; color: var(--muted); font-size: 12px; }
+		.support-info { margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--line); }
+		.support-label { margin: 0 0 5px; color: var(--muted); font-size: 11px; }
+		.support-detail { margin: 0; color: #555550; font-size: 12px; }
+		.comments-section { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); }
+		.comment-count { color: var(--muted); font-size: 13px; }
+		.comment-form { margin-bottom: 26px; }
+		.comment-form textarea {
+			display: block;
+			width: 100%;
+			min-height: 88px;
+			padding: 12px;
+			resize: vertical;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+		}
+		.comment-form textarea:focus { outline: 2px solid #a3a39e; outline-offset: 1px; }
+		.comment-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+		.comment-submit {
+			padding: 9px 14px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--soft);
+			color: var(--text);
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.comment-submit:hover { background: #e8e8e5; }
+		.comment-list { border-top: 1px solid var(--line); }
+		.comment {
+			display: grid;
+			grid-template-columns: 34px minmax(0, 1fr);
+			gap: 12px;
+			padding: 17px 0;
+			border-bottom: 1px solid var(--line);
+		}
+		.comment-avatar {
+			width: 34px;
+			height: 34px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: var(--soft);
+			color: #555550;
+			font-size: 11px;
+			font-weight: 700;
+		}
+		.comment-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+		.comment-author { font-size: 13px; font-weight: 600; }
+		.comment-date { color: var(--muted); font-size: 12px; }
+		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
+		.comment-resource-mention { padding: 0; border: 0; background: transparent; color: #1769c2; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+		.comment-resource-mention:hover { color: #0e4e91; }
+		.comment-resource-mention:focus-visible { outline: 2px solid #1769c2; outline-offset: 2px; }
+		.resource-mention-menu { position: relative; }
+		.resource-mention-menu summary { padding: 8px 10px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font-weight: 600; list-style: none; cursor: pointer; }
+		.resource-mention-menu summary::-webkit-details-marker { display: none; }
+		.resource-mention-panel { position: absolute; z-index: 4; bottom: calc(100% + 6px); left: 0; width: min(290px, calc(100vw - 60px)); max-height: 220px; overflow: auto; padding: 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.resource-mention-option { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+		.resource-mention-option:hover { background: var(--soft); }
+		.resource-mention-empty { display: block; padding: 9px 10px; color: var(--muted); font-size: 12px; }
+		.comment-inline-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
+		.comment-reply-toggle { padding: 0; border: 0; background: transparent; color: #555550; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+		.comment-reply-toggle:hover { color: var(--text); text-decoration: underline; }
+		.comment-reply-form { display: grid; gap: 8px; margin-top: 10px; }
+		.comment-reply-form[hidden] { display: none; }
+		.comment-reply-form textarea { width: 100%; min-height: 66px; padding: 9px 10px; resize: vertical; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; }
+		.comment-replies { margin: 12px 0 0 17px; padding-left: 14px; border-left: 2px solid var(--line); }
+		.comment-reply { padding: 12px 0; border-bottom: 0; }
+		.resource-card.resource-mentioned { outline: 3px solid #1769c2; outline-offset: 3px; animation: resource-mentioned 1.2s ease-in-out 2; }
+		@keyframes resource-mentioned { 50% { outline-color: #75b6ff; outline-offset: 5px; } }
+		.course-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+		.add-resource-btn, .cover-change-btn {
+			padding: 9px 12px;
+			border: 1px solid #d6d6d3;
+			border-radius: 4px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.add-resource-btn, .cover-change-btn { display: none; }
+		.course-cover-frame { position: relative; }
+		.course-cover-frame .course-cover { display: block; }
+		.cover-change-btn { position: absolute; top: 12px; right: 12px; }
+		body.editing .add-resource-btn, body.editing .cover-change-btn { display: inline-flex; }
+		body.editing .editable { cursor: text; outline: 1px dashed #9b6a31; outline-offset: 4px; }
+		.cover-file-input { display: none; }
+		.resource-card { position: relative; }
+		.resource-open { display: block; color: inherit; text-decoration: none; }
+		.resource-menu { display: none; position: absolute; z-index: 2; top: 8px; right: 8px; }
+		body.editing .resource-menu { display: block; }
+		.resource-menu summary {
+			width: 36px;
+			height: 36px;
+			display: grid;
+			place-items: center;
+			border-radius: 4px;
+			background: rgba(255, 255, 255, .96);
+			color: var(--text);
+			font-size: 22px;
+			font-weight: 700;
+			line-height: 1;
+			list-style: none;
+			cursor: pointer;
+		}
+		.resource-menu summary::-webkit-details-marker { display: none; }
+		.resource-menu-panel { position: absolute; top: 40px; right: 0; width: 174px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+		.resource-menu-panel button, .comment-remove { width: 100%; padding: 9px 10px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+		.resource-menu-panel button:hover, .comment-remove:hover { background: var(--soft); }
+		.resource-menu-panel .delete-resource, .comment-remove { color: #8e3028; }
+		.resource-card.is-hidden { opacity: .58; border-style: dashed; }
+		.hidden-badge { display: none; }
+		body.editing .resource-card.is-hidden .hidden-badge { display: block; position: absolute; left: 8px; top: 8px; padding: 5px 8px; border-radius: 3px; background: var(--text); color: #fff; font-size: 11px; }
+		.comment-layout { min-width: 0; }
+		.comment-remove { display: none; width: auto; margin-top: 8px; padding-left: 0; font-size: 12px; }
+		body.editing .comment-remove { display: inline-block; }
+		.editor-dialog { width: min(560px, calc(100% - 32px)); max-height: 90vh; overflow: auto; padding: 24px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--text); }
+		.editor-dialog::backdrop { background: rgba(20, 20, 20, .42); }
+		.editor-dialog h2 { margin: 0 0 20px; }
+		.editor-form { display: grid; gap: 14px; }
+		.editor-field label { display: block; margin-bottom: 6px; font-weight: 600; }
+		.editor-field input, .editor-field textarea { width: 100%; padding: 10px 11px; border: 1px solid #d6d6d3; border-radius: 4px; background: #fff; color: var(--text); font: inherit; }
+		.editor-field textarea { min-height: 84px; resize: vertical; }
+		.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+		.editor-actions button { padding: 9px 13px; border: 1px solid #d6d6d3; border-radius: 4px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+		.editor-actions button[type="submit"] { background: var(--soft); font-weight: 600; }
+
+		@media (max-width: 720px) {
+			.topbar { height: 58px; padding: 0 18px; }
+			.layout { min-height: calc(100vh - 58px); flex-direction: column; }
+			.sidebar { width: 100%; flex-basis: auto; padding: 18px; border-right: 0; border-bottom: 1px solid var(--line); }
+			main { padding: 22px 18px 36px; }
+			.course-cover { aspect-ratio: 2 / 1; min-height: 140px; margin-bottom: 20px; }
+			h1 { font-size: 23px; }
+			.resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+			.comments-section { margin-top: 34px; padding-top: 22px; }
+		}
+		@media (max-width: 560px) {
+			.resource-grid { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="brand">
+			<img src="../../LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO.svg" alt="Logo de Universidad Central">
+			<span class="brand-name">Videoteca</span>
+			<span class="brand-role">· Profesor</span>
+		</div>
+		<div class="profile">
+			<span>Nombre del profesor</span>
+			<span class="avatar" aria-hidden="true">NP</span>
+		</div>
+	</header>
+
+	<div class="layout">
+		<aside class="sidebar" aria-label="Asignaturas del profesor">
+			<a class="sidebar-link" href="main.html">Panel principal</a>
+			<p class="side-label">Mis asignaturas</p>
+			<ul class="course-list">
+				<li aria-current="page"><a href="asignatura-1.html"><span id="course-nav-title">Asignatura 1</span></a></li>
+				<li><span class="course-name">Asignatura 2</span></li>
+				<li><span class="course-name">Asignatura 3</span></li>
+				<li><span class="course-name">Asignatura 4</span></li>
+			</ul>
+		</aside>
+
+		<main>
+			<div class="course-cover-frame">
+				<img class="course-cover" id="course-cover" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80" alt="Profesional de salud consultando información clínica">
+				<button class="cover-change-btn" id="change-cover-button" type="button">Cambiar foto</button>
+				<input class="cover-file-input" id="cover-file-input" type="file" accept="image/*">
+			</div>
+			<div class="course-header">
+				<h1 class="editable" id="course-title" aria-label="Nombre de la asignatura">Asignatura 1</h1>
+				<div class="course-actions">
+					<button type="button" class="edit-course-btn" id="edit-course-button">Editar asignatura</button>
+					<button type="button" class="add-resource-btn" id="add-resource-button">+ Añadir recurso</button>
+				</div>
+			</div>
+			<p class="course-description editable" id="course-description" aria-label="Descripción de la asignatura">Recursos y contenidos disponibles para esta asignatura.</p>
+			<p class="save-status" id="course-save-status" role="status" aria-live="polite"></p>
+
+			<section aria-labelledby="resources-title">
+				<div class="section-heading">
+					<h2 id="resources-title">Recursos de aprendizaje</h2>
+					<span class="resource-count" id="resource-count"></span>
+				</div>
+				<div class="resource-grid" id="resource-grid"></div>
+			</section>
+
+			<section class="comments-section" aria-labelledby="comments-title">
+				<div class="section-heading">
+					<h2 id="comments-title">Comentarios</h2>
+					<span class="comment-count" id="comment-count">2 comentarios</span>
+				</div>
+
+				<form class="comment-form" id="comment-form">
+					<textarea id="comment-input" name="comment" aria-label="Comentario de la asignatura" placeholder="Escribe tu comentario..." required></textarea>
+					<div class="comment-actions">
+						<details class="resource-mention-menu">
+							<summary>Mencionar recurso</summary>
+							<div class="resource-mention-panel" id="mention-resource-options"></div>
+						</details>
+						<button class="comment-submit" type="submit">Publicar comentario</button>
+					</div>
+				</form>
+
+				<div class="comment-list" id="comment-list" aria-live="polite"></div>
+			</section>
+
+		</main>
+	</div>
+	<script src="editor-store.js"></script>
+	<script src="asignatura-editor.js"></script>
+</body>
+</html>
