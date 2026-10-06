@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Asignaturas | Videoteca</title>
+  <script>
+    if (window.location.pathname === "/") window.location.replace("login.html");
+  </script>
   <link rel="stylesheet" href="styles.css">
   <style>
     .student-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: calc(100vh - 64px); }

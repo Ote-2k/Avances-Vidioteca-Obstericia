@@ -1,8 +1,10 @@
-import { auth, db } from "../../firebase-config.js";
+import { auth, db, storage } from "../../firebase-config.js";
 import { signOut } from "firebase/auth";
+import { deleteObject, ref } from "firebase/storage";
 import {
 	addDoc,
 	collection,
+	deleteDoc,
 	doc,
 	getDoc,
 	getDocs,
@@ -66,6 +68,7 @@ window.VideotecaStoreReady = (async () => {
 	let data = initialData();
 	let cloudReady = false;
 	let currentRole = "";
+	let lastPersistError = null;
 	let persistQueue = Promise.resolve();
 
 	function notifySync(type, error = null) {
@@ -100,8 +103,36 @@ window.VideotecaStoreReady = (async () => {
 		data = nextData;
 		if (!cloudReady) return;
 		const snapshot = JSON.parse(JSON.stringify(data));
-		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => notifySync("saved"))
-			.catch((error) => notifySync("error", error));
+		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => {
+			lastPersistError = null;
+			notifySync("saved");
+		}).catch((error) => {
+			lastPersistError = error;
+			notifySync("error", error);
+		});
+	}
+
+	async function deleteAssignmentLocalVideos(id) {
+		const database = await new Promise((resolve, reject) => {
+			const request = indexedDB.open("videoteca-local-videos", 1);
+			request.onupgradeneeded = () => {
+				if (!request.result.objectStoreNames.contains("videos")) request.result.createObjectStore("videos");
+			};
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error || new Error("No se pudo abrir IndexedDB."));
+		});
+		await new Promise((resolve, reject) => {
+			const transaction = database.transaction("videos", "readwrite");
+			const videos = transaction.objectStore("videos");
+			const request = videos.getAllKeys();
+			request.onsuccess = () => request.result.forEach((key) => {
+				if (typeof key === "string" && key.startsWith(`${id}/`)) videos.delete(key);
+			});
+			transaction.oncomplete = resolve;
+			transaction.onerror = () => reject(transaction.error || new Error("No se pudieron eliminar los videos locales."));
+			transaction.onabort = () => reject(transaction.error || new Error("Se canceló la limpieza de videos locales."));
+		});
+		database.close();
 	}
 
 	function requireTeacher() {
@@ -222,9 +253,12 @@ window.VideotecaStoreReady = (async () => {
 		isTeacher: () => currentRole === "profesor",
 		refreshAssignmentNavigation: () => renderAssignmentNavigation(),
 		getCloudStatus: () => cloudReady,
-		flush: () => persistQueue,
+		async flush() {
+			await persistQueue;
+			if (lastPersistError) throw lastPersistError;
+		},
 		async getAssignments() {
-			if (!cloudReady) return [{ id: assignmentId, ...data.course }];
+			if (!cloudReady) return [];
 			try {
 				const assignmentsQuery = currentRole === "alumno"
 					? query(collection(db, "asignaturas"), where("published", "==", true))
@@ -233,7 +267,7 @@ window.VideotecaStoreReady = (async () => {
 				return assignments.docs.map((item) => ({ id: item.id, ...(item.data().course || {}) }));
 			} catch (error) {
 				notifySync("error", error);
-				return [{ id: assignmentId, ...data.course }];
+				return [];
 			}
 		},
 		async getStudentAssignment(id) {
@@ -271,6 +305,29 @@ window.VideotecaStoreReady = (async () => {
 			if (!saved.exists()) throw new Error("La asignatura ya no existe.");
 			await updateDoc(target, { "course.title": title, updatedAt: serverTimestamp() });
 			if (id === assignmentId) data.course = { ...data.course, title };
+		},
+		async deleteAssignment(id) {
+			if (currentRole !== "profesor") throw new Error("Solo un profesor puede eliminar asignaturas.");
+			if (!cloudReady) throw new Error("Firebase no está disponible. Revisa la conexión y las reglas.");
+			const target = doc(db, "asignaturas", id);
+			const saved = await getDoc(target);
+			if (!saved.exists()) return false;
+			const resources = await getDocs(collection(target, "recursos"));
+			const resourceDocs = resources.docs;
+			const storagePaths = resourceDocs.map((resource) => resource.data().videoStoragePath).filter(Boolean);
+			await Promise.all(storagePaths.map((path) => deleteObject(ref(storage, path)).catch((error) => {
+				console.warn("No se pudo eliminar un video antiguo de Storage.", error);
+			})));
+			for (let offset = 0; offset < resourceDocs.length; offset += 450) {
+				const batch = writeBatch(db);
+				resourceDocs.slice(offset, offset + 450).forEach((resource) => batch.delete(resource.ref));
+				await batch.commit();
+			}
+			await deleteDoc(target);
+			await deleteAssignmentLocalVideos(id).catch((error) => {
+				console.warn("No se pudieron limpiar los videos locales de la asignatura.", error);
+			});
+			return true;
 		},
 		saveCourse(updates) {
 			requireTeacher();

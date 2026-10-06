@@ -36,15 +36,19 @@ service cloud.firestore {
     }
 
     match /asignaturas/{assignmentId} {
-      allow get, list: if teacherOwns(assignmentId)
+      allow get: if (resource == null && roleIs('profesor'))
+        || (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
+        || (roleIs('alumno') && resource.data.published == true);
+      allow list: if (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
         || (roleIs('alumno') && resource.data.published == true);
       allow create: if roleIs('profesor')
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.published is bool;
-      allow update: if teacherOwns(assignmentId)
+      allow update: if roleIs('profesor')
+          && resource.data.ownerUid == request.auth.uid
           && request.resource.data.ownerUid == resource.data.ownerUid
         || (roleIs('alumno') && resource.data.published == true && onlyAppendedComment());
-      allow delete: if teacherOwns(assignmentId);
+      allow delete: if roleIs('profesor') && resource.data.ownerUid == request.auth.uid;
 
       match /recursos/{resourceId} {
         allow read: if teacherOwns(assignmentId)

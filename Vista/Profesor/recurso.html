@@ -93,7 +93,8 @@
 		.course-list li[aria-current="page"] a { background: var(--soft); color: var(--text); font-weight: 700; }
 
 		main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 36px 40px 48px; }
-		.resource-meta { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+		.resource-title-block { min-width: 0; }
+		.resource-meta { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
 		.resource-heading {
 			display: flex;
 			align-items: center;
@@ -125,8 +126,6 @@
 		body.student-view .comments-section,
 		body.student-view .comment-remove { display: none !important; }
 		.video-attachment { margin: -6px 0 14px; }
-		.video-attachment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-		.video-attachment-heading h2 { font-size: 14px; }
 		.video-source-status { color: var(--muted); font-size: 12px; }
 		.video-source-editor { display: none; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
 		body.editing-resource .video-source-editor { display: block; }
@@ -333,7 +332,6 @@
 		.comment-date { color: var(--muted); font-size: 12px; }
 		.comment-text { margin: 0; color: #555550; line-height: 1.5; }
 		.comment-layout { min-width: 0; }
-		.comment-timestamp-hint { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
 		.comment-timestamp-link { color: #805321; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 		.comment-timestamp-link:hover { color: #5c3a17; }
 		.comment-inline-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
@@ -418,16 +416,16 @@
 
 		<main>
 			<div class="resource-heading">
-				<h1 class="editable" id="resource-title" data-placeholder="Título del recurso" aria-label="Título del recurso">Recurso de aprendizaje</h1>
+				<div class="resource-title-block">
+					<h1 class="editable" id="resource-title" data-placeholder="Título del recurso" aria-label="Título del recurso">Recurso de aprendizaje</h1>
+					<p class="resource-meta" id="resource-meta"></p>
+				</div>
 				<div class="resource-actions">
 					<button type="button" class="resource-action" id="edit-resource-button">Editar recurso</button>
 				</div>
 			</div>
-			<section class="video-attachment" aria-labelledby="video-attachment-title">
-				<div class="video-attachment-heading">
-					<h2 id="video-attachment-title">Video adjunto</h2>
-					<span class="video-source-status" id="video-source-status"></span>
-				</div>
+			<section class="video-attachment" aria-label="Video">
+				<span class="video-source-status" id="video-source-status"></span>
 				<div class="video-source-editor">
 					<div class="source-mode" role="group" aria-label="Tipo de video adjunto">
 						<label><input type="radio" name="video-source-mode" value="url" checked> URL</label>
@@ -445,9 +443,9 @@
 					<div class="source-panel" id="file-source-panel" hidden>
 						<div class="source-row">
 							<input id="replace-video-input" type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v">
-							<label class="video-file-button" for="replace-video-input">Elegir y subir video</label>
+							<label class="video-file-button" for="replace-video-input">Elegir y guardar video</label>
 						</div>
-						<p class="video-hint">El archivo se convierte a WebM en este equipo y se guarda en Firebase Storage.</p>
+						<p class="video-hint">El archivo se convierte a WebM y se guarda en este navegador. No estará disponible en otros equipos ni perfiles del navegador.</p>
 					</div>
 				</div>
 			</section>
@@ -481,7 +479,6 @@
 					</form>
 				</section>
 			</div>
-			<p class="resource-meta" id="resource-meta"></p>
 			<p class="resource-description editable" id="resource-description" data-placeholder="Descripción del recurso" aria-label="Descripción del recurso"></p>
 			<p class="save-status" id="resource-save-status" role="status" aria-live="polite"></p>
 
@@ -504,7 +501,6 @@
 
 				<form class="comment-form" id="comment-form">
 					<textarea id="comment-input" name="comment" aria-label="Escribe tu comentario" placeholder="Escribe tu comentario..." required></textarea>
-					<p class="comment-timestamp-hint">Escribe un momento como 0:09 para enlazarlo con el video.</p>
 					<div class="comment-actions">
 						<button class="comment-submit" type="submit">Publicar comentario</button>
 					</div>

@@ -1,5 +1,5 @@
 import { storage } from "../../firebase-config.js";
-import { deleteObject, getBlob, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getBlob, ref } from "firebase/storage";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import coreURL from "@ffmpeg/core?url";
@@ -91,7 +91,52 @@ await window.VideotecaStoreReady;
 	const completedPopupIds = new Set();
 	const maxPopupImageSize = 400 * 1024;
 	let activeEditorAction = "popups";
+	let activeVideoObjectUrl = "";
 	let ffmpegPromise;
+	let localVideoDatabasePromise;
+
+	function openLocalVideoDatabase() {
+		if (!localVideoDatabasePromise) {
+			localVideoDatabasePromise = new Promise((resolve, reject) => {
+				const request = indexedDB.open("videoteca-local-videos", 1);
+				request.onupgradeneeded = () => request.result.createObjectStore("videos");
+				request.onsuccess = () => resolve(request.result);
+				request.onerror = () => reject(request.error || new Error("No se pudo abrir IndexedDB."));
+			});
+		}
+		return localVideoDatabasePromise;
+	}
+
+	async function saveLocalVideo(key, file) {
+		const database = await openLocalVideoDatabase();
+		await new Promise((resolve, reject) => {
+			const transaction = database.transaction("videos", "readwrite");
+			transaction.objectStore("videos").put(file, key);
+			transaction.oncomplete = resolve;
+			transaction.onerror = () => reject(transaction.error || new Error("No se pudo guardar el video en IndexedDB."));
+			transaction.onabort = () => reject(transaction.error || new Error("Se canceló el guardado local del video."));
+		});
+	}
+
+	async function readLocalVideo(key) {
+		const database = await openLocalVideoDatabase();
+		return new Promise((resolve, reject) => {
+			const request = database.transaction("videos", "readonly").objectStore("videos").get(key);
+			request.onsuccess = () => resolve(request.result || null);
+			request.onerror = () => reject(request.error || new Error("No se pudo leer el video desde IndexedDB."));
+		});
+	}
+
+	async function removeLocalVideo(key) {
+		const database = await openLocalVideoDatabase();
+		await new Promise((resolve, reject) => {
+			const transaction = database.transaction("videos", "readwrite");
+			transaction.objectStore("videos").delete(key);
+			transaction.oncomplete = resolve;
+			transaction.onerror = () => reject(transaction.error || new Error("No se pudo eliminar el video local."));
+			transaction.onabort = () => reject(transaction.error || new Error("Se canceló la eliminación del video local."));
+		});
+	}
 
 	async function transcodeVideoToWebM(file) {
 		const maxInputSize = 250 * 1024 * 1024;
@@ -114,14 +159,14 @@ await window.VideotecaStoreReady;
 			await ffmpeg.writeFile(inputName, await fetchFile(file));
 			const result = await ffmpeg.exec([
 				"-i", inputName,
-				"-c:v", "libvpx-vp9",
-				"-crf", "34",
+				"-c:v", "libvpx",
+				"-crf", "30",
 				"-b:v", "0",
-				"-deadline", "good",
-				"-cpu-used", "4",
+				"-deadline", "realtime",
+				"-cpu-used", "8",
 				"-c:a", "libopus",
 				"-b:a", "96k",
-				"-threads", "2",
+				"-threads", "1",
 				outputName
 			]);
 			if (result !== 0) throw new Error("FFmpeg no pudo convertir el archivo a WebM.");
@@ -136,10 +181,10 @@ await window.VideotecaStoreReady;
 
 	async function storeVideoFile(file) {
 		const webmFile = await transcodeVideoToWebM(file);
-		const objectPath = `videos/${window.VideotecaStore.getAssignmentId()}/${resourceId}/${Date.now()}-${encodeURIComponent(webmFile.name)}`;
-		const videoRef = ref(storage, objectPath);
-		await uploadBytes(videoRef, webmFile, { contentType: "video/webm" });
-		return { objectPath, fileName: webmFile.name };
+		const localKey = `${window.VideotecaStore.getAssignmentId()}/${resourceId}`;
+		resourceSaveStatus.textContent = "WebM listo; guardando localmente en este navegador...";
+		await saveLocalVideo(localKey, webmFile);
+		return { localKey, fileName: webmFile.name };
 	}
 
 	async function captureVideoThumbnail(sourceUrl) {
@@ -484,24 +529,38 @@ await window.VideotecaStoreReady;
 		videoEmbed.hidden = true;
 		resourcePlayer.hidden = false;
 
-		if (!resource.videoStoragePath && !resource.videoUrl.trim()) {
+		if (!resource.videoStoragePath && !resource.videoLocalKey && !resource.videoUrl.trim()) {
 			resourcePlayer.removeAttribute("src");
 			resourcePlayer.load();
-			videoSourceStatus.textContent = "Sin video adjunto";
+				videoSourceStatus.textContent = "";
 			updateDurationAvailability();
 			return;
 		}
 
-		if (resource.videoStoragePath) {
+		if (resource.videoLocalKey) {
+			try {
+				const videoBlob = await readLocalVideo(resource.videoLocalKey);
+				if (!videoBlob) throw new Error("No se encontró el archivo en IndexedDB de este navegador.");
+				activeVideoObjectUrl = URL.createObjectURL(videoBlob);
+				resourcePlayer.src = activeVideoObjectUrl;
+				resourcePlayer.load();
+				videoSourceStatus.textContent = "";
+			} catch (error) {
+				videoSourceStatus.textContent = error.message || "No se pudo leer el video local.";
+				console.error("No se pudo cargar el video desde IndexedDB.", error);
+				return;
+			}
+			document.querySelector('input[name="video-source-mode"][value="file"]').checked = true;
+		} else if (resource.videoStoragePath) {
 			try {
 				const videoBlob = await getBlob(ref(storage, resource.videoStoragePath));
 				activeVideoObjectUrl = URL.createObjectURL(videoBlob);
 				resourcePlayer.src = activeVideoObjectUrl;
 				resourcePlayer.load();
-				videoSourceStatus.textContent = `Video WebM: ${resource.videoFileName || "archivo convertido"}`;
+				videoSourceStatus.textContent = "";
 			} catch (error) {
-				videoSourceStatus.textContent = "No se pudo leer el video autorizado desde Firebase Storage.";
-				console.error(error);
+				videoSourceStatus.textContent = `No se pudo leer el video desde Firebase Storage${error.code ? ` (${error.code})` : "."}`;
+				console.error("No se pudo cargar el video desde Firebase Storage.", error);
 				return;
 			}
 			document.querySelector('input[name="video-source-mode"][value="file"]').checked = true;
@@ -529,7 +588,7 @@ await window.VideotecaStoreReady;
 		const resource = data.resources[resourceId];
 		resourceTitle.textContent = resource.title;
 		document.title = `${resource.title} | Videoteca`;
-		resourceMeta.textContent = `${resource.unit} · Video educativo · ${resource.duration}`;
+		resourceMeta.textContent = `${resource.unit} · Video educativo`;
 		resourceDescription.textContent = resource.description;
 		document.querySelector("#video-url-input").value = resource.videoUrl;
 		trimStartInput.value = Number.isFinite(Number(resource.trimStart)) ? String(resource.trimStart) : "0";
@@ -672,7 +731,7 @@ await window.VideotecaStoreReady;
 		renderComments();
 	}
 
-	function finishResourceCreation() {
+	async function finishResourceCreation() {
 		const title = resourceTitle.textContent.trim();
 		const description = resourceDescription.textContent.trim();
 		const resource = window.VideotecaStore.get().resources[resourceId];
@@ -686,11 +745,11 @@ await window.VideotecaStoreReady;
 			resourceDescription.focus();
 			return;
 		}
-		if (!resource.videoStoragePath && !resource.videoUrl.trim()) {
+		if (!resource.videoStoragePath && !resource.videoLocalKey && !resource.videoUrl.trim()) {
 			resourceSaveStatus.textContent = "Adjunta un video mediante URL o archivo para crear el recurso.";
 			return;
 		}
-		if (!resource.videoStoragePath && resource.videoUrl.trim()) {
+		if (!resource.videoStoragePath && !resource.videoLocalKey && resource.videoUrl.trim()) {
 			try {
 				resolveVideoUrl(resource.videoUrl);
 			} catch {
@@ -698,12 +757,22 @@ await window.VideotecaStoreReady;
 				return;
 			}
 		}
+		if (!window.VideotecaStore.getCloudStatus()) {
+			resourceSaveStatus.textContent = "No se puede crear el recurso: Firestore no pudo cargar la asignatura. Revisa las reglas y el UID propietario.";
+			return;
+		}
 
 		const duration = Number.isFinite(resourcePlayer.duration) && resourcePlayer.duration > 0
 			? `${Math.ceil(resourcePlayer.duration / 60)} min`
 			: resource.duration;
 		window.VideotecaStore.saveResource(resourceId, { title, description, duration, isDraft: false, isHidden: false });
 		window.VideotecaStore.setResourceHidden(resourceId, false);
+		try {
+			await window.VideotecaStore.flush();
+		} catch (error) {
+			resourceSaveStatus.textContent = `No se pudo guardar el recurso en Firestore${error.code ? ` (${error.code})` : "."}`;
+			return;
+		}
 		isCreatingResource = false;
 		document.body.classList.remove("resource-creation-pending");
 		window.history.replaceState(null, "", `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}`);
@@ -798,13 +867,16 @@ await window.VideotecaStoreReady;
 			console.warn("No se pudo generar la miniatura del video.", error);
 		}
 		const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
+		const previousLocalKey = window.VideotecaStore.get().resources[resourceId].videoLocalKey;
 		window.VideotecaStore.saveResource(resourceId, {
 			videoUrl,
 			videoStoragePath: "",
+			videoLocalKey: "",
 			videoFileName: "",
 			...(thumbnailUrl ? { thumbnailUrl } : {})
 		});
 		if (previousStoragePath) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
+		if (previousLocalKey) removeLocalVideo(previousLocalKey).catch(() => {});
 		renderResource();
 		resourceSaveStatus.textContent = thumbnailUrl
 			? "Video y miniatura actualizados."
@@ -842,20 +914,28 @@ await window.VideotecaStoreReady;
 				console.warn("No se pudo generar la miniatura del archivo.", error);
 			}
 			const previousStoragePath = window.VideotecaStore.get().resources[resourceId].videoStoragePath;
+			const previousLocalKey = window.VideotecaStore.get().resources[resourceId].videoLocalKey;
 			const uploadedVideo = await storeVideoFile(file);
 			window.VideotecaStore.saveResource(resourceId, {
 				videoUrl: "",
-				videoStoragePath: uploadedVideo.objectPath,
+				videoStoragePath: "",
+				videoLocalKey: uploadedVideo.localKey,
 				videoFileName: uploadedVideo.fileName,
 				...(thumbnailUrl ? { thumbnailUrl } : {})
 			});
 			if (previousStoragePath) deleteObject(ref(storage, previousStoragePath)).catch(() => {});
+			if (previousLocalKey && previousLocalKey !== uploadedVideo.localKey) removeLocalVideo(previousLocalKey).catch(() => {});
 			renderResource();
 			resourceSaveStatus.textContent = thumbnailUrl
-				? `Video convertido a WebM y miniatura guardados: ${uploadedVideo.fileName}`
-				: `Video convertido a WebM: ${uploadedVideo.fileName}. No se pudo capturar una miniatura nueva.`;
-		} catch {
-			resourceSaveStatus.textContent = "No se pudo subir el video a Firebase Storage.";
+				? `Video convertido a WebM y guardado localmente: ${uploadedVideo.fileName}`
+				: `Video convertido a WebM y guardado localmente: ${uploadedVideo.fileName}. No se pudo capturar una miniatura nueva.`;
+		} catch (error) {
+			console.error("No se pudo convertir o subir el video.", error);
+			if (error.name === "QuotaExceededError") {
+				resourceSaveStatus.textContent = "No hay espacio suficiente en el almacenamiento local del navegador para este video.";
+			} else {
+				resourceSaveStatus.textContent = error.message || "No se pudo convertir el video a WebM.";
+			}
 		}
 		event.target.value = "";
 	});

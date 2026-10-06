@@ -45,7 +45,13 @@ async function renderAssignments() {
 		button.type = "submit";
 		button.textContent = "Cambiar nombre";
 		form.append(input, button);
-		row.append(link, form);
+		const deleteButton = document.createElement("button");
+		deleteButton.type = "button";
+		deleteButton.className = "assignment-delete";
+		deleteButton.dataset.assignmentId = assignment.id;
+		deleteButton.setAttribute("aria-label", `Eliminar ${assignment.title || "asignatura sin nombre"}`);
+		deleteButton.textContent = "Eliminar";
+		row.append(link, form, deleteButton);
 		assignmentList.append(row);
 	});
 }
@@ -81,6 +87,30 @@ assignmentList.addEventListener("submit", async (event) => {
 		await renderAssignments();
 	} catch (error) {
 		assignmentStatus.textContent = "No se pudo cambiar el nombre. Comprueba tu conexión y las reglas de Firestore.";
+		console.error(error);
+		button.disabled = false;
+	}
+});
+
+assignmentList.addEventListener("click", async (event) => {
+	const button = event.target.closest("button.assignment-delete");
+	if (!button) return;
+	const row = button.closest(".assignment-row");
+	const title = row.querySelector("a").textContent;
+	if (!window.confirm(`¿Eliminar "${title}" y todos sus recursos? Esta acción no se puede deshacer.`)) return;
+	button.disabled = true;
+	assignmentStatus.textContent = `Eliminando "${title}" y sus recursos...`;
+	try {
+		const deleted = await store.deleteAssignment(button.dataset.assignmentId);
+		if (!deleted) {
+			assignmentStatus.textContent = "La asignatura ya no existe.";
+		} else {
+			assignmentStatus.textContent = `Asignatura "${title}" eliminada.`;
+		}
+		await renderAssignments();
+		await store.refreshAssignmentNavigation();
+	} catch (error) {
+		assignmentStatus.textContent = "No se pudo eliminar. Comprueba la conexión, el acceso y las reglas de Firestore.";
 		console.error(error);
 		button.disabled = false;
 	}

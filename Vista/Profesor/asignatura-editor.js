@@ -4,7 +4,6 @@ await window.VideotecaStoreReady;
 
 (() => {
 	const resourceGrid = document.querySelector("#resource-grid");
-	const resourceCount = document.querySelector("#resource-count");
 	const courseTitle = document.querySelector("#course-title");
 	const courseDescription = document.querySelector("#course-description");
 	const courseSaveStatus = document.querySelector("#course-save-status");
@@ -76,12 +75,6 @@ await window.VideotecaStoreReady;
 		cover.alt = `Portada de ${data.course.title}`;
 
 		const resources = Object.entries(data.resources).filter(([, resource]) => !resource.isDraft);
-		const visibleResources = resources.filter(([, resource]) => !resource.isHidden);
-		const hiddenCount = resources.length - visibleResources.length;
-		const materialCount = visibleResources.reduce((total, [, resource]) => total + resource.materials.length, 0);
-		resourceCount.textContent = isEditing && hiddenCount
-			? `${visibleResources.length} visibles · ${hiddenCount} ocultos`
-			: `${visibleResources.length} recursos · ${materialCount} materiales asociados`;
 		resourceGrid.replaceChildren();
 		renderUnitManager(data.course.units);
 		const unitGrids = new Map();

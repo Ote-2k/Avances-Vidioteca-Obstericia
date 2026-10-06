@@ -4,6 +4,9 @@ import { defineConfig } from "vite";
 const fromRoot = (path) => resolve(process.cwd(), path);
 
 export default defineConfig({
+	optimizeDeps: {
+		exclude: ["@ffmpeg/ffmpeg"]
+	},
 	build: {
 		target: "esnext",
 		rollupOptions: {
