@@ -5,11 +5,13 @@ const fromRoot = (path) => resolve(process.cwd(), path);
 
 export default defineConfig({
 	optimizeDeps: {
+		// FFmpeg crea un worker módulo; preempaquetarlo rompe su URL durante el desarrollo.
 		exclude: ["@ffmpeg/ffmpeg"]
 	},
 	build: {
 		target: "esnext",
 		rollupOptions: {
+			// Cada página HTML es una entrada independiente del frontend multipágina.
 			input: {
 				index: fromRoot("index.html"),
 				login: fromRoot("login.html"),

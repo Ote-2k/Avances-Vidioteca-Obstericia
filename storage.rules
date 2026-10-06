@@ -2,6 +2,7 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Estas reglas cubren videos antiguos de Storage; los nuevos se guardan en IndexedDB.
     function assignment(assignmentId) {
       return firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)).data;
     }

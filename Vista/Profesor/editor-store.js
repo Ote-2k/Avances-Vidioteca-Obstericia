@@ -16,6 +16,7 @@ import {
 	writeBatch
 } from "firebase/firestore";
 
+// Capa compartida de datos: inicializa rol/asignatura y expone operaciones para las vistas.
 window.VideotecaStoreReady = (async () => {
 	const assignmentId = new URLSearchParams(window.location.search).get("asignatura") || "asignatura-1";
 	const defaults = {
@@ -81,6 +82,7 @@ window.VideotecaStoreReady = (async () => {
 	}
 
 	async function persist(snapshot) {
+		// Curso/comentarios viven en el documento padre; cada recurso es un documento hijo.
 		if (currentRole === "alumno") {
 			await updateDoc(assignmentRef, { comments: snapshot.comments, updatedAt: serverTimestamp() });
 			return;
@@ -103,6 +105,7 @@ window.VideotecaStoreReady = (async () => {
 		data = nextData;
 		if (!cloudReady) return;
 		const snapshot = JSON.parse(JSON.stringify(data));
+		// Serializar snapshots evita que dos cambios compitan al escribir lotes Firestore.
 		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => {
 			lastPersistError = null;
 			notifySync("saved");
@@ -141,6 +144,7 @@ window.VideotecaStoreReady = (async () => {
 
 	async function initialize() {
 		try {
+			// El rol se lee del perfil Firestore; las reglas lo validan de nuevo en el servidor.
 			await auth.authStateReady();
 			if (!auth.currentUser) {
 				window.location.href = "../../login.html";
@@ -260,6 +264,7 @@ window.VideotecaStoreReady = (async () => {
 		async getAssignments() {
 			if (!cloudReady) return [];
 			try {
+				// Los filtros coinciden con los permisos de consulta de firestore.rules.
 				const assignmentsQuery = currentRole === "alumno"
 					? query(collection(db, "asignaturas"), where("published", "==", true))
 					: query(collection(db, "asignaturas"), where("ownerUid", "==", auth.currentUser.uid));

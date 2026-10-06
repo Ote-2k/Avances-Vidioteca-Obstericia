@@ -2,6 +2,7 @@ import "../Profesor/editor-store.js";
 
 await window.VideotecaStoreReady;
 
+// Conecta la selección del acordeón con los datos publicados y las tarjetas de clase.
 const store = window.VideotecaStore;
 const assignmentList = document.querySelector("#student-assignment-list");
 const courseTitle = document.querySelector("#student-course-title");
@@ -14,6 +15,7 @@ function resourceUrl(assignmentId, resourceId) {
 }
 
 function renderAssignmentTree(assignment, selectedId, assignmentData) {
+	// El árbol lateral representa asignatura > unidad > recurso con elementos nativos <details>.
 	assignmentList.replaceChildren();
 	assignments.forEach((item) => {
 		const assignmentDetails = document.createElement("details");
@@ -124,6 +126,7 @@ try {
 	} else {
 		const requestedId = new URLSearchParams(window.location.search).get("asignatura");
 		const selected = assignments.find((item) => item.id === requestedId) || assignments[0];
+		// Carga las unidades de las demás asignaturas para construir el árbol lateral.
 		const assignmentData = new Map(await Promise.all(assignments.map(async (item) => {
 			try {
 				return [item.id, await store.getStudentAssignment(item.id)];

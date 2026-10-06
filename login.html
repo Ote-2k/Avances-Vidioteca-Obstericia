@@ -73,6 +73,7 @@
     const emailInput = form.querySelector("#email");
     const passwordInput = form.querySelector("#password");
 
+    // Auth valida las credenciales; el perfil Firestore define el rol de la aplicación.
     async function redirectByRole(user) {
       const profile = await getDoc(doc(db, "usuarios", user.uid));
       const role = profile.exists() ? profile.data().role : "";
@@ -84,6 +85,7 @@
       }
     }
 
+    // Espera a restaurar la sesión persistida antes de decidir qué vista abrir.
     await auth.authStateReady();
     if (auth.currentUser) await redirectByRole(auth.currentUser);
 

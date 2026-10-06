@@ -2,6 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // El rol vive en un perfil que solo puede leer su dueño; los clientes no pueden modificarlo.
     function signedIn() {
       return request.auth != null;
     }
@@ -22,6 +23,7 @@ service cloud.firestore {
     }
 
     function onlyAppendedComment() {
+      // El alumno solo puede añadir una entrada al hilo del curso y firmarla con su UID.
       let oldComments = resource.data.comments.course;
       let newComments = request.resource.data.comments.course;
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'updatedAt'])
@@ -36,6 +38,7 @@ service cloud.firestore {
     }
 
     match /asignaturas/{assignmentId} {
+      // El profesor consulta asignaturas propias; el alumno solo puede consultar las publicadas.
       allow get: if (resource == null && roleIs('profesor'))
         || (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
         || (roleIs('alumno') && resource.data.published == true);
@@ -51,6 +54,7 @@ service cloud.firestore {
       allow delete: if roleIs('profesor') && resource.data.ownerUid == request.auth.uid;
 
       match /recursos/{resourceId} {
+        // El alumno lee recursos visibles; solo el profesor propietario puede editarlos.
         allow read: if teacherOwns(assignmentId)
           || (studentCanRead(assignmentId) && resource.data.isHidden == false);
         allow create, update, delete: if teacherOwns(assignmentId);

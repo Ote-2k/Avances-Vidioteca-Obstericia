@@ -8,6 +8,7 @@ import "./editor-store.js";
 
 await window.VideotecaStoreReady;
 
+// Editor de recurso: administra video, materiales, marcas de tiempo y comentarios.
 (() => {
 	const pageParams = new URLSearchParams(window.location.search);
 	const isTeacher = window.VideotecaStore.isTeacher();
@@ -96,6 +97,7 @@ await window.VideotecaStoreReady;
 	let localVideoDatabasePromise;
 
 	function openLocalVideoDatabase() {
+		// IndexedDB conserva el Blob local; Firestore solo guarda una clave para referenciarlo.
 		if (!localVideoDatabasePromise) {
 			localVideoDatabasePromise = new Promise((resolve, reject) => {
 				const request = indexedDB.open("videoteca-local-videos", 1);
@@ -139,6 +141,7 @@ await window.VideotecaStoreReady;
 	}
 
 	async function transcodeVideoToWebM(file) {
+		// FFmpeg WebAssembly convierte el archivo a WebM VP8/Opus dentro del navegador.
 		const maxInputSize = 250 * 1024 * 1024;
 		if (file.size > maxInputSize) throw new Error("El video original supera el límite de 250 MB para conversión local.");
 		if (!ffmpegPromise) {
@@ -1169,6 +1172,7 @@ await window.VideotecaStoreReady;
 	});
 
 	function seekToCommentTimestamp(seconds, label) {
+		// El salto respeta el tramo configurado y requiere un reproductor HTML con duración conocida.
 		const resource = window.VideotecaStore.get().resources[resourceId];
 		if (resourcePlayer.hidden || !Number.isFinite(resourcePlayer.duration)) {
 			resourceSaveStatus.textContent = "Los timestamps requieren un video local o una URL directa.";

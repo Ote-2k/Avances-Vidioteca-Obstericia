@@ -2,6 +2,7 @@ import "./editor-store.js";
 
 await window.VideotecaStoreReady;
 
+// Renderiza la asignatura seleccionada y conecta sus controles con VideotecaStore.
 (() => {
 	const resourceGrid = document.querySelector("#resource-grid");
 	const courseTitle = document.querySelector("#course-title");
@@ -212,6 +213,7 @@ await window.VideotecaStoreReady;
 	}
 
 	function shiftMentions(mentions, start, end, replacementLength) {
+		// Conserva las menciones anteriores y desplaza los rangos posteriores al texto editado.
 		const difference = replacementLength - (end - start);
 		return mentions.flatMap((mention) => {
 			if (mention.end <= start) return [mention];

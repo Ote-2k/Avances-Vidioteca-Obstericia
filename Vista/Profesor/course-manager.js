@@ -1,6 +1,8 @@
 import "./editor-store.js";
 
 await window.VideotecaStoreReady;
+
+// Controla el panel de asignaturas; las operaciones persistentes pertenecen al store.
 const store = window.VideotecaStore;
 const createForm = document.querySelector("#assignment-create-form");
 const assignmentList = document.querySelector("#assignment-management-list");
