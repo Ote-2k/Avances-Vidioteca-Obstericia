@@ -628,19 +628,20 @@ await window.VideotecaStoreReady;
 	}
 
 	function createCommentArticle(comment, isReply = false) {
+		const identity = window.VideotecaStore.getCommentIdentity(comment);
 		const article = document.createElement("article");
 		article.className = isReply ? "comment comment-reply" : "comment";
 		const avatar = document.createElement("span");
 		avatar.className = "comment-avatar";
 		avatar.setAttribute("aria-hidden", "true");
-		avatar.textContent = comment.initials;
+		avatar.textContent = identity.initials;
 		const content = document.createElement("div");
 		content.className = "comment-layout";
 		const header = document.createElement("div");
 		header.className = "comment-header";
 		const author = document.createElement("span");
 		author.className = "comment-author";
-		author.textContent = comment.author;
+		author.textContent = identity.author;
 		const date = document.createElement("time");
 		date.className = "comment-date";
 		date.textContent = comment.date;
@@ -675,7 +676,8 @@ await window.VideotecaStoreReady;
 	}
 
 	function renderComments() {
-		const comments = window.VideotecaStore.get().comments[resourceId] || [];
+		const storeData = window.VideotecaStore.get();
+		const comments = storeData.resources[resourceId].comments || storeData.comments[resourceId] || [];
 		commentCount.textContent = `${comments.length} ${comments.length === 1 ? "comentario" : "comentarios"}`;
 		commentList.replaceChildren();
 		comments.filter((comment) => !comment.parentId).forEach((comment) => {
@@ -1225,8 +1227,6 @@ await window.VideotecaStoreReady;
 		if (!text) return;
 		window.VideotecaStore.addComment(resourceId, {
 			parentId: replyForm.dataset.replyFormFor,
-			author: "Tú",
-			initials: "T",
 			date: "Ahora",
 			text
 		});
@@ -1238,7 +1238,7 @@ await window.VideotecaStoreReady;
 		event.preventDefault();
 		const text = commentInput.value.trim();
 		if (!text) return;
-		window.VideotecaStore.addComment(resourceId, { author: "Tú", initials: "T", date: "Ahora", text });
+		window.VideotecaStore.addComment(resourceId, { date: "Ahora", text });
 		commentForm.reset();
 		renderComments();
 		commentInput.focus();

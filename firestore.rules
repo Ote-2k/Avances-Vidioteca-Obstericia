@@ -22,14 +22,28 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.published == true;
     }
 
-    function onlyAppendedComment() {
-      // El alumno solo puede añadir una entrada al hilo del curso y firmarla con su UID.
-      let oldComments = resource.data.comments.course;
-      let newComments = request.resource.data.comments.course;
+    function onlyAppendedCourseComment() {
+      let oldComments = resource.data.get('comments', {});
+      let newComments = request.resource.data.get('comments', {});
+      let oldThread = oldComments.get('course', []);
+      let newThread = newComments.get('course', []);
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'updatedAt'])
-        && request.resource.data.comments.diff(resource.data.comments).affectedKeys().hasOnly(['course'])
-        && newComments.size() == oldComments.size() + 1
-        && newComments[newComments.size() - 1].authorUid == request.auth.uid;
+        && newComments.diff(oldComments).affectedKeys().hasOnly(['course'])
+        && newComments.diff(oldComments).affectedKeys().size() == 1
+        && oldThread is list
+        && newThread is list
+        && newThread.size() == oldThread.size() + 1
+        && newThread[newThread.size() - 1].authorUid == request.auth.uid;
+    }
+
+    function onlyAppendedResourceComment() {
+      let oldThread = resource.data.get('comments', []);
+      let newThread = request.resource.data.get('comments', []);
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'updatedAt'])
+        && oldThread is list
+        && newThread is list
+        && newThread.size() == oldThread.size() + 1
+        && newThread[newThread.size() - 1].authorUid == request.auth.uid;
     }
 
     match /usuarios/{userId} {
@@ -50,14 +64,18 @@ service cloud.firestore {
       allow update: if roleIs('profesor')
           && resource.data.ownerUid == request.auth.uid
           && request.resource.data.ownerUid == resource.data.ownerUid
-        || (roleIs('alumno') && resource.data.published == true && onlyAppendedComment());
+        || (roleIs('alumno') && resource.data.published == true && onlyAppendedCourseComment());
       allow delete: if roleIs('profesor') && resource.data.ownerUid == request.auth.uid;
 
       match /recursos/{resourceId} {
         // El alumno lee recursos visibles; solo el profesor propietario puede editarlos.
         allow read: if teacherOwns(assignmentId)
           || (studentCanRead(assignmentId) && resource.data.isHidden == false);
-        allow create, update, delete: if teacherOwns(assignmentId);
+        allow create, delete: if teacherOwns(assignmentId);
+        allow update: if teacherOwns(assignmentId)
+          || (studentCanRead(assignmentId)
+            && resource.data.isHidden == false
+            && onlyAppendedResourceComment());
       }
     }
   }

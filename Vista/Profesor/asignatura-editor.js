@@ -315,19 +315,20 @@ await window.VideotecaStoreReady;
 	}
 
 	function createCommentArticle(comment, isReply = false) {
+		const identity = window.VideotecaStore.getCommentIdentity(comment);
 		const article = document.createElement("article");
 		article.className = isReply ? "comment comment-reply" : "comment";
 		const avatar = document.createElement("span");
 		avatar.className = "comment-avatar";
 		avatar.setAttribute("aria-hidden", "true");
-		avatar.textContent = comment.initials;
+		avatar.textContent = identity.initials;
 		const content = document.createElement("div");
 		content.className = "comment-layout";
 		const header = document.createElement("div");
 		header.className = "comment-header";
 		const author = document.createElement("span");
 		author.className = "comment-author";
-		author.textContent = comment.author;
+		author.textContent = identity.author;
 		const date = document.createElement("time");
 		date.className = "comment-date";
 		date.textContent = comment.date;
@@ -418,8 +419,6 @@ await window.VideotecaStoreReady;
 	}
 	function createComment(text, resourceMentions = []) {
 		window.VideotecaStore.addComment("course", {
-			author: "Tú",
-			initials: "T",
 			date: "Ahora",
 			text,
 			resourceMentions
@@ -588,8 +587,6 @@ await window.VideotecaStoreReady;
 		const draft = getCommentDraft(textarea);
 		window.VideotecaStore.addComment("course", {
 			parentId: form.dataset.replyFormFor,
-			author: "Tú",
-			initials: "T",
 			date: "Ahora",
 			text,
 			resourceMentions: draft.mentions

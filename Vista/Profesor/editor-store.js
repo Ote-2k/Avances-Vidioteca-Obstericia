@@ -81,9 +81,14 @@ window.VideotecaStoreReady = (async () => {
 		window.dispatchEvent(new CustomEvent(`videoteca:${type}`, { detail: error }));
 	}
 
-	async function persist(snapshot) {
+	async function persist(snapshot, resourceCommentId = null) {
 		// Curso/comentarios viven en el documento padre; cada recurso es un documento hijo.
 		if (currentRole === "alumno") {
+			if (resourceCommentId) {
+				const resourceRef = doc(collection(assignmentRef, "recursos"), resourceCommentId);
+				await updateDoc(resourceRef, { comments: snapshot.resources[resourceCommentId].comments, updatedAt: serverTimestamp() });
+				return;
+			}
 			await updateDoc(assignmentRef, { comments: snapshot.comments, updatedAt: serverTimestamp() });
 			return;
 		}
@@ -101,12 +106,12 @@ window.VideotecaStoreReady = (async () => {
 		await batch.commit();
 	}
 
-	function write(nextData) {
+	function write(nextData, { resourceCommentId = null } = {}) {
 		data = nextData;
 		if (!cloudReady) return;
 		const snapshot = JSON.parse(JSON.stringify(data));
 		// Serializar snapshots evita que dos cambios compitan al escribir lotes Firestore.
-		persistQueue = persistQueue.then(() => persist(snapshot)).then(() => {
+		persistQueue = persistQueue.then(() => persist(snapshot, resourceCommentId)).then(() => {
 			lastPersistError = null;
 			notifySync("saved");
 		}).catch((error) => {
@@ -249,11 +254,32 @@ window.VideotecaStoreReady = (async () => {
 
 	await initialize();
 
+	function currentCommentIdentity() {
+		const user = auth.currentUser;
+		const source = user?.displayName?.trim()
+			|| user?.email?.split("@")[0]
+			|| (currentRole === "profesor" ? "profesor" : "alumno");
+		const parts = source.replace(/[._-]+/g, " ").trim().split(/\s+/).filter(Boolean);
+		const author = parts.map((part) => `${part.charAt(0).toLocaleUpperCase()}${part.slice(1)}`).join(" ");
+		const initials = parts.slice(0, 2).map((part) => part.charAt(0)).join("").toLocaleUpperCase();
+		return { author, initials: initials || "U" };
+	}
+
+	function getCommentIdentity(comment) {
+		if (comment?.author && comment.author !== "Tú") {
+			return { author: comment.author, initials: comment.initials || comment.author.charAt(0).toLocaleUpperCase() };
+		}
+		if (comment?.authorUid && comment.authorUid === auth.currentUser?.uid) return currentCommentIdentity();
+		const legacyId = comment?.authorUid?.slice(-4).toLocaleUpperCase();
+		return { author: legacyId ? `Usuario ${legacyId}` : "Usuario", initials: legacyId?.slice(-1) || "U" };
+	}
+
 	window.VideotecaStore = {
 		get: () => data,
 		getAssignmentId: () => assignmentId,
 		getUnits: () => data.course.units,
 		getRole: () => currentRole,
+		getCommentIdentity,
 		isTeacher: () => currentRole === "profesor",
 		refreshAssignmentNavigation: () => renderAssignmentNavigation(),
 		getCloudStatus: () => cloudReady,
@@ -424,26 +450,44 @@ window.VideotecaStoreReady = (async () => {
 			return true;
 		},
 		addComment(scope, comment) {
-			const newComment = { ...comment, authorUid: auth.currentUser.uid, id: `comentario-${Date.now().toString(36)}` };
-			data.comments[scope] = [...(data.comments[scope] || []), newComment];
-			write(data);
+			const newComment = {
+				...comment,
+				...currentCommentIdentity(),
+				authorUid: auth.currentUser.uid,
+				id: `comentario-${Date.now().toString(36)}`
+			};
+			const resource = scope === "course" ? null : data.resources[scope];
+			if (resource) {
+				resource.comments = [...(resource.comments || data.comments[scope] || []), newComment];
+				write(data, { resourceCommentId: scope });
+			} else {
+				data.comments[scope] = [...(data.comments[scope] || []), newComment];
+				write(data);
+			}
 			return newComment;
 		},
 		deleteComment(scope, id) {
 			requireTeacher();
-			if (!data.comments[scope]) return false;
+			const resource = scope === "course" ? null : data.resources[scope];
+			const comments = scope === "course" ? data.comments.course : resource?.comments || data.comments[scope];
+			if (!comments) return false;
 			const removedIds = new Set([id]);
 			let foundReply;
 			do {
 				foundReply = false;
-				data.comments[scope].forEach((comment) => {
+				comments.forEach((comment) => {
 					if (removedIds.has(comment.parentId) && !removedIds.has(comment.id)) {
 						removedIds.add(comment.id);
 						foundReply = true;
 					}
 				});
 			} while (foundReply);
-			data.comments[scope] = data.comments[scope].filter((comment) => !removedIds.has(comment.id));
+			const remaining = comments.filter((comment) => !removedIds.has(comment.id));
+			if (scope === "course") data.comments.course = remaining;
+			else if (resource) {
+				resource.comments = remaining;
+				delete data.comments[scope];
+			} else data.comments[scope] = remaining;
 			write(data);
 			return true;
 		}
