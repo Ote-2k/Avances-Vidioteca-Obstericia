@@ -14,6 +14,8 @@
   --color-7: #cbd5e1; /* Texto secundario y labels */
   --color-8: #94a3b8; /* Placeholders y textos de ayuda */
   --color-9: #e2e8f0; /* Fondo de inputs */
+  
+  --color-10: #FFF5F5; /*fondo. en general xd (fondo pastel casi blanco)*/
 }
 
 /* ==========================================================================
@@ -230,142 +232,253 @@ body.login-body {
 }
 
 /* ==========================================================================
-   ESTILOS PARA INDEX.HTML
+   ESTILOS DE LA DASHBOARD DE ESTUDIANTES (Nuevo index)
    ========================================================================== */
-.index-body {
-  background-color: #ffffff;
-  min-height: 100vh;
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 28px;
+  background-color: var(--color-1);
+  border-bottom: 1px solid var(--color-3);
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-6);
+  margin: 0;
+}
+
+.student-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-badge-info {
   display: flex;
   flex-direction: column;
-  color: #111827;
+  align-items: flex-end;
+  font-size: 0.85rem;
+  color: var(--color-6);
 }
 
-.index-layout {
-  display: flex;
-  flex: 1;
-}
-
-/* Sidebar */
-.sidebar-menu {
-  width: 280px;
-  background-color: #f9fafb;
-  border-right: 1px solid #e5e7eb;
-  padding: 24px 16px;
-}
-
-.sidebar-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.accordion-item {
-  margin-bottom: 8px;
-}
-
-.accordion-header {
+.badge-role {
+  font-size: 0.75rem;
+  color: var(--color-4);
   font-weight: 600;
-  padding: 10px 12px;
-  background-color: #e5e7eb;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--color-3);
+  color: var(--color-6);
+  padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
-  user-select: none;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
 }
 
-.accordion-content {
-  padding-left: 12px;
-  margin-top: 6px;
+.btn-logout:hover {
+  background: var(--color-3);
+  color: var(--color-6);
 }
 
-.sub-accordion-item {
-  margin-bottom: 6px;
+.student-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: calc(100vh - 64px);
 }
 
-.sub-accordion-header {
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 8px 10px;
-  background-color: #f3f4f6;
-  border-radius: 4px;
+.student-sidebar {
+  padding: 28px 18px;
+  border-right: 1px solid var(--color-3);
+  background: var(--color-1);
+}
+
+.student-sidebar h2 {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  color: var(--color-6);
+}
+
+.student-assignment-list {
+  display: grid;
+  gap: 6px;
+}
+
+.student-assignment, .student-unit-tree {
+  min-width: 0;
+}
+
+.student-assignment > summary, .student-unit-tree > summary {
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--color-6);
   cursor: pointer;
-  color: #4b5563;
 }
 
-.sub-accordion-content {
+.student-assignment > summary {
+  background: var(--color-3);
+  font-weight: 600;
+}
+
+.student-unit-tree {
+  margin-top: 5px;
+}
+
+.student-unit-tree > summary {
   display: flex;
-  flex-direction: column;
-  padding-left: 16px;
-  margin-top: 4px;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 13px;
 }
 
-.sub-accordion-content a {
-  font-size: 0.85rem;
-  color: #2563eb;
-  text-decoration: none;
-  padding: 4px 8px;
+.student-resource-list {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 6px 14px;
+}
+
+.student-resource-link {
+  display: block;
+  padding: 6px 8px;
   border-radius: 4px;
+  color: var(--color-4);
+  font-size: 13px;
+  text-decoration: none;
 }
 
-.sub-accordion-content a:hover {
-  background-color: #e0e7ff;
+.student-resource-link:hover {
+  background: #e0e7ff;
 }
 
-.placeholder-text {
-  font-size: 0.85rem;
-  color: #9ca3af;
-  padding: 6px;
-}
-
-/* Contenido Principal */
-.main-content {
-  flex: 1;
+.student-main {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
   padding: 40px;
 }
 
-.content-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #111827;
+.student-main h1 {
+  margin: 0 0 8px;
+  font-size: 1.7rem;
+  color: var(--color-1);
 }
 
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  max-width: 1000px;
-}
-
-.class-card {
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 30px 20px;
-  text-align: center;
-  text-decoration: none;
-  color: #111827;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.class-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: 8px;
-}
-
-.class-card p {
-  font-size: 0.85rem;
+.student-status {
+  min-height: 20px;
+  margin: 0 0 24px;
   color: #6b7280;
+  font-size: 0.9rem;
 }
 
-.class-card:hover {
-  transform: translateY(-4px);
-  border-color: #2563eb;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+.student-classes-title {
+  margin: 30px 0 16px;
+  font-size: 1.15rem;
+  color: var(--color-1);
 }
+
+.student-unit {
+  margin: 24px 0 0;
+}
+
+.student-unit-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.student-unit-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-2);
+}
+
+.student-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-resource-card {
+  overflow: hidden;
+  border: 1px solid var(--color-3);
+  border-radius: 8px;
+  background: var(--color-1);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-resource-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.student-resource-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #f0f0ee;
+}
+
+.student-resource-content {
+  padding: 14px;
+}
+
+.student-resource-content h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: var(--color-6);
+}
+
+.student-resource-content p {
+  margin: 0;
+  color: var(--color-6);
+  font-size: 0.8rem;
+}
+
+body.index-body {
+  background-color: var(--color-10) !important; 
+  color: var(--color-1);
+  margin: 0;
+}
+
+/* esto fuerza que el layout y contenedor central acompañen el fondo, quitar o alterar si queremos cmbiar el fondo */
+.student-layout,
+.student-main {
+  background-color: transparent;
+}
+
+.student-empty {
+  color: var(--color-3) !important; 
+  text-align: left; /* En la barra lateral se ve mejor alineado a la izquierda, nose, me daba tock q se pegara a la pared */
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+
+@media (max-width: 760px) {
+  .student-layout { grid-template-columns: 1fr; }
+  .student-sidebar { border-right: 0; border-bottom: 1px solid var(--color-3); }
+  .student-main { padding: 24px 16px; }
+  .student-resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .student-resource-grid { grid-template-columns: 1fr; }
+}
+
 
 /* ==========================================================================
    VIDEOTECA.HTML

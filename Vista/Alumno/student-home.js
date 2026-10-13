@@ -1,4 +1,6 @@
 import "../Profesor/editor-store.js";
+import { auth } from "../../firebase-config.js";
+import { onAuthStateChanged } from "firebase/auth";
 
 await window.VideotecaStoreReady;
 
@@ -118,6 +120,16 @@ function renderAssignment(assignment, selectedId, assignmentData) {
 	});
 	status.textContent = visibleResources.length ? "Selecciona una clase para abrirla." : "Esta asignatura aún no tiene clases publicadas.";
 }
+
+// Cargar nombre del estudiante autenticado en el Header
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    const userNameElement = document.querySelector("#student-user-name");
+    if (userNameElement) {
+      userNameElement.textContent = user.displayName || user.email.split("@")[0];
+    }
+  }
+});
 
 try {
 	assignments = await store.getAssignments();
