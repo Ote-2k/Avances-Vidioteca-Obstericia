@@ -1,3 +1,9 @@
+/**
+ * Editor de recursos legado de la videoteca.
+ *
+ * Maneja la edición de video, documentos de apoyo, marcas temporales y pop-ups
+ * dentro de la vista clásica del profesor.
+ */
 import { storage } from "../../firebase-config.js";
 import { deleteObject, getBlob, ref } from "firebase/storage";
 import { FFmpeg } from "@ffmpeg/ffmpeg";

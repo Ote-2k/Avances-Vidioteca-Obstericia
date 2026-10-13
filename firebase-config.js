@@ -1,3 +1,9 @@
+/**
+ * Configuración legacy de Firebase del proyecto.
+ *
+ * Este archivo se mantiene para compatibilidad con las páginas HTML antiguas y
+ * la migración gradual hacia la versión React del sistema.
+ */
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";

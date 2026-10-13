@@ -1,3 +1,9 @@
+/**
+ * Gestor de asignaturas de la versión clásica de la videoteca.
+ *
+ * Este script se encarga de listar, crear y eliminar asignaturas ayudándose del
+ * store global del proyecto legacy.
+ */
 import "./editor-store.js";
 
 await window.VideotecaStoreReady;

@@ -18,8 +18,11 @@ service cloud.firestore {
     }
 
     function studentCanRead(assignmentId) {
+      let assignment = get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data;
       return roleIs('alumno')
-        && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.published == true;
+        && request.auth.token.email is string
+        && assignment.published == true
+        && assignment.get('estudiantesInscritos', []).hasAny([request.auth.token.email.lower()]);
     }
 
     function onlyAppendedCourseComment() {
@@ -47,17 +50,27 @@ service cloud.firestore {
     }
 
     match /usuarios/{userId} {
-      allow get: if signedIn() && request.auth.uid == userId;
-      allow list, create, update, delete: if false;
+      allow get: if signedIn() && (request.auth.uid == userId || roleIs('admin'));
+      allow list: if roleIs('admin');
+      allow create: if roleIs('admin')
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['nombre', 'displayName', 'email', 'role', 'createdAt'])
+          && request.resource.data.role == 'alumno'
+          && request.resource.data.email == request.auth.token.email);
+      allow update, delete: if roleIs('admin');
     }
 
     match /asignaturas/{assignmentId} {
-      // El profesor consulta asignaturas propias; el alumno solo puede consultar las publicadas.
+      // Los alumnos solo consultan asignaturas publicadas en las que están inscritos.
       allow get: if (resource == null && roleIs('profesor'))
         || (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
-        || (roleIs('alumno') && resource.data.published == true);
+        || studentCanRead(assignmentId);
       allow list: if (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
-        || (roleIs('alumno') && resource.data.published == true);
+        || (roleIs('alumno')
+          && request.auth.token.email is string
+          && resource.data.published == true
+          && resource.data.get('estudiantesInscritos', []).hasAny([request.auth.token.email.lower()]));
       allow create: if roleIs('profesor')
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.published is bool;
@@ -77,6 +90,15 @@ service cloud.firestore {
             && resource.data.isHidden == false
             && onlyAppendedResourceComment());
       }
+    }
+
+    match /notificaciones/{notificationId} {
+      allow get, list: if roleIs('alumno') && resource.data.usuarioUid == request.auth.uid;
+      allow update: if roleIs('alumno')
+        && resource.data.usuarioUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leido'])
+        && request.resource.data.leido == true;
+      allow create, delete: if false;
     }
   }
 }
