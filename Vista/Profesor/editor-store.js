@@ -159,7 +159,7 @@ window.VideotecaStoreReady = (async () => {
 			}
 			const profile = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
 			currentRole = profile.exists() ? profile.data().role : "";
-			if (! ["profesor", "alumno"].includes(currentRole)) {
+			if (! ["profesor", "alumno", "admin"].includes(currentRole)) {
 				await signOut(auth);
 				window.location.href = "../../login.html";
 				return;

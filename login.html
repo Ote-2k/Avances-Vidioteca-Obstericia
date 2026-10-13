@@ -83,7 +83,8 @@
     async function redirectByRole(user) {
       const profile = await getDoc(doc(db, "usuarios", user.uid));
       const role = profile.exists() ? profile.data().role : "";
-      if (role === "profesor") window.location.href = "Vista/Profesor/main.html";
+	  if (role === "admin") window.location.href = "Vista/Admin/admin.html";
+      else if (role === "profesor") window.location.href = "Vista/Profesor/main.html";
       else if (role === "alumno") window.location.href = "index.html";
       else {
         await signOut(auth);
