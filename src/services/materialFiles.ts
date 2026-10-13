@@ -1,3 +1,9 @@
+/**
+ * Gestión de documentos adjuntos almacenados localmente en IndexedDB.
+ *
+ * La aplicación guarda archivos que el profesor adjunta a cada recurso y los
+ * reutiliza en el navegador sin depender de un almacenamiento externo.
+ */
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
 	"application/pdf",
@@ -42,6 +48,9 @@ function openAttachmentDatabase(): Promise<IDBDatabase> {
 	});
 }
 
+/**
+ * Guarda un archivo de apoyo en IndexedDB validando tamaño y tipo.
+ */
 export async function saveLocalMaterial(localKey: string, file: File): Promise<UploadedMaterial> {
 	if (file.size > MAX_FILE_SIZE) throw new Error("El documento supera el límite de 25 MB.");
 	const extensionType = TYPE_BY_EXTENSION[file.name.split(".").pop()?.toLowerCase() || ""];
@@ -62,6 +71,9 @@ export async function saveLocalMaterial(localKey: string, file: File): Promise<U
 	return { localKey, format: file.name.split(".").pop()?.toUpperCase() || "Archivo" };
 }
 
+/**
+ * Genera una URL local para un archivo previamente guardado en el navegador.
+ */
 export async function getLocalMaterialUrl(localKey: string): Promise<string> {
 	const database = await openAttachmentDatabase();
 	try {
@@ -77,6 +89,9 @@ export async function getLocalMaterialUrl(localKey: string): Promise<string> {
 	}
 }
 
+/**
+ * Elimina un documento adjunto del almacenamiento local del navegador.
+ */
 export async function deleteLocalMaterial(localKey: string): Promise<void> {
 	const database = await openAttachmentDatabase();
 	try {

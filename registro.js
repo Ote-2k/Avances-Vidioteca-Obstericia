@@ -1,3 +1,9 @@
+/**
+ * Registro de estudiantes en la versión clásica del proyecto.
+ *
+ * Crea la cuenta Firebase, actualiza el perfil del usuario y escribe el registro
+ * del alumno en Firestore para que pueda acceder a la videoteca.
+ */
 import { auth, db } from "./firebase-config.js";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";

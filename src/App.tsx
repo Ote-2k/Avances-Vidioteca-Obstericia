@@ -1,3 +1,10 @@
+/**
+ * Enrutador principal de la aplicación.
+ *
+ * Centraliza la navegación, la composición de vistas y la protección de rutas
+ * según el rol del usuario autenticado. La intención es mantener una sola
+ * entrada de acceso para estudiantes, profesores y administradores.
+ */
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
@@ -10,10 +17,18 @@ const ProfessorPage = lazy(() => import("./pages/WorkspacePages").then((module) 
 const ResourcePage = lazy(() => import("./pages/WorkspacePages").then((module) => ({ default: module.ResourcePage })));
 const StudentPage = lazy(() => import("./pages/WorkspacePages").then((module) => ({ default: module.StudentPage })));
 
+/**
+ * Pantalla temporal mostrada mientras se resuelve la sesión activa.
+ * Evita que la UI entre en estados inconsistentes durante la comprobación de Firebase Auth.
+ */
 function LoadingScreen() {
 	return <main className="center-screen"><p role="status">Verificando sesión...</p></main>;
 }
 
+/**
+ * Protege una vista para que solo pueda acceder un conjunto concreto de roles.
+ * Redirige a la página inicial del usuario si no tiene permisos suficientes.
+ */
 function RoleGate({ roles, children }: { roles: UserRole[]; children: ReactNode }) {
 	const { user, profile, loading } = useAuth();
 	const location = useLocation();

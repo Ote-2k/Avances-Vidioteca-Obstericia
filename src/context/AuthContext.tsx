@@ -1,3 +1,10 @@
+/**
+ * Contexto de autenticación global.
+ *
+ * Centraliza la sesión del usuario, el perfil asociado y la lógica de refresco
+ * del documento de Firestore. Cualquier vista puede consumir el estado sin
+ * duplicar la comprobación de sesión.
+ */
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -16,12 +23,20 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 const roles = new Set<UserRole>(["alumno", "profesor", "admin"]);
 
+/**
+ * Proveedor global que sincroniza la sesión de Firebase con el perfil del usuario.
+ */
 export function AuthProvider({ children }: PropsWithChildren) {
 	const [user, setUser] = useState<User | null>(null);
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 
+	/**
+	 * Recarga el perfil del usuario activo a partir del documento de Firestore.
+	 * Si el rol no es válido o el documento no existe, la sesión queda invalidada
+	 * para evitar accesos no autorizados.
+	 */
 	async function refreshProfile() {
 		const currentUser = auth.currentUser;
 		if (!currentUser) return;
@@ -98,6 +113,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * Hook de consumo del contexto de autenticación.
+ */
 export function useAuth(): AuthContextValue {
 	const context = useContext(AuthContext);
 	if (!context) throw new Error("useAuth debe usarse dentro de AuthProvider.");

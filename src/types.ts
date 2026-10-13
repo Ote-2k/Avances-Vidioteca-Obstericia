@@ -1,3 +1,10 @@
+/**
+ * Tipos compartidos del dominio de la videoteca.
+ *
+ * Aquí se modelan los perfiles de usuario, las asignaturas, los recursos y los
+ * comentarios para que la UI y los servicios trabajen con una estructura
+ * consistente.
+ */
 export type UserRole = "alumno" | "profesor" | "admin";
 
 export interface UserProfile {

@@ -1,3 +1,9 @@
+/**
+ * Configuración central de Firebase para la aplicación React.
+ *
+ * Este archivo expone la instancia de autenticación y base de datos para que el
+ * resto del proyecto pueda consumir servicios sin repetir la inicialización.
+ */
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";

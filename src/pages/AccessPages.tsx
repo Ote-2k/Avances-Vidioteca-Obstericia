@@ -1,3 +1,10 @@
+/**
+ * Páginas de acceso a la videoteca.
+ *
+ * Aquí se gestionan el login, la recuperación de contraseña y el registro de
+ * estudiantes. La lógica está separada del resto del workspace para que el flujo
+ * de autenticación sea claro y reutilizable.
+ */
 import { useState, type FormEvent } from "react";
 import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -5,6 +12,11 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
+/**
+ * Layout compartido para pantallas de autenticación.
+ * Presenta la identidad institucional y prepara una estructura visual consistente
+ * para los formularios de acceso.
+ */
 function AccessLayout({ title, subtitle, children }: React.PropsWithChildren<{ title: string; subtitle: string }>) {
 	return (
 		<main className="access-layout">
@@ -24,6 +36,10 @@ function AccessLayout({ title, subtitle, children }: React.PropsWithChildren<{ t
 	);
 }
 
+/**
+ * Pantalla de inicio de sesión para usuarios registrados.
+ * Valida credenciales, revalida el perfil y redirige al rol correspondiente.
+ */
 export function LoginPage() {
 	const { user, profile, loading, refreshProfile } = useAuth();
 	const navigate = useNavigate();
@@ -69,6 +85,10 @@ export function LoginPage() {
 	);
 }
 
+/**
+ * Pantalla de registro de alumnos.
+ * Crea la cuenta de autenticación y el perfil de usuario con rol de estudiante.
+ */
 export function RegisterPage() {
 	const { refreshProfile } = useAuth();
 	const [name, setName] = useState("");

@@ -1,3 +1,9 @@
+/**
+ * Hilo de comentarios reutilizable en asignaturas y recursos.
+ *
+ * Permite visualizar comentarios principales y respuestas anidadas con un patrón
+ * de interacción muy simple para la videoteca.
+ */
 import { useState, type FormEvent } from "react";
 import type { CourseComment, UserProfile } from "../types";
 
@@ -7,6 +13,9 @@ interface CommentThreadProps {
 	onReply: (parentId: string, text: string) => Promise<void>;
 }
 
+/**
+ * Calcula la etiqueta visible para un autor de comentario según el perfil del usuario actual.
+ */
 function displayAuthor(comment: CourseComment, profile: UserProfile): string {
 	const author = comment.author?.trim();
 	if (author && !["usuario", "tú", "tu", "you"].includes(author.toLocaleLowerCase())) return author;
@@ -15,11 +24,17 @@ function displayAuthor(comment: CourseComment, profile: UserProfile): string {
 	return comment.authorUid ? `Usuario ${comment.authorUid.slice(-6).toLocaleUpperCase()}` : "Participante";
 }
 
+/**
+ * Formatea una fecha ISO a un formato legible en español para la UI.
+ */
 function formatDate(value: string): string {
 	const parsed = new Date(value);
 	return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
 }
 
+/**
+ * Renderiza el bloque de comentarios con soporte para respuestas anidadas.
+ */
 export function CommentThread({ comments, profile, onReply }: CommentThreadProps) {
 	const [replyTo, setReplyTo] = useState("");
 	const [replyText, setReplyText] = useState("");

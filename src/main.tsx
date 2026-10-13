@@ -1,3 +1,10 @@
+/**
+ * Punto de entrada principal de la aplicación.
+ *
+ * Se monta el árbol React, se habilita el router y se envuelve la app con el
+ * proveedor de autenticación para que todos los componentes tengan acceso al
+ * perfil activo y al estado de sesión.
+ */
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";

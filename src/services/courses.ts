@@ -1,3 +1,10 @@
+/**
+ * Servicios de dominio para asignaturas, recursos y comentarios.
+ *
+ * Este módulo actúa como capa de acceso a Firestore y encapsula la lógica de
+ * lectura/escritura del contenido educativo: cursos, estudiantes, material y
+ * comentarios de cada recurso.
+ */
 import {
 	addDoc,
 	arrayUnion,
@@ -23,6 +30,9 @@ export interface CourseView extends CourseSummary {
 
 const assignments = collection(db, "asignaturas");
 
+/**
+ * Normaliza un documento de recurso de Firestore al tipo del dominio de la app.
+ */
 function normalizeResource(id: string, data: Record<string, unknown>): ResourceSummary {
 	return {
 		id,
@@ -43,6 +53,10 @@ function normalizeResource(id: string, data: Record<string, unknown>): ResourceS
 	};
 }
 
+/**
+ * Devuelve la lista de asignaturas visibles para el rol actual.
+ * Los alumnos solo reciben asignaturas publicadas y matriculadas.
+ */
 export async function listAssignments(role: UserRole, uid: string, email = ""): Promise<CourseSummary[]> {
 	const normalizedEmail = email.trim().toLowerCase();
 	if (role === "alumno" && !normalizedEmail) return [];
@@ -65,6 +79,9 @@ export async function listAssignments(role: UserRole, uid: string, email = ""): 
 		|| assignment.estudiantesInscritos?.some((studentEmail) => studentEmail.toLowerCase() === normalizedEmail));
 }
 
+/**
+ * Carga una asignatura completa con sus recursos, unidades y comentarios.
+ */
 export async function getCourse(assignmentId: string, role: UserRole, email = ""): Promise<CourseView | null> {
 	const assignmentRef = doc(db, "asignaturas", assignmentId);
 	const snapshot = await getDoc(assignmentRef);
@@ -94,6 +111,9 @@ export async function getCourse(assignmentId: string, role: UserRole, email = ""
 	};
 }
 
+/**
+ * Crea una nueva asignatura con estructura base para unidades y comentarios.
+ */
 export async function createAssignment(title: string, uid: string): Promise<string> {
 	const created = await addDoc(assignments, {
 		course: { title, description: "", coverUrl: "", units: [{ id: "unidad-principal", name: "Unidad principal" }] },
@@ -105,10 +125,16 @@ export async function createAssignment(title: string, uid: string): Promise<stri
 	return created.id;
 }
 
+/**
+ * Renombra una asignatura existente.
+ */
 export async function renameAssignment(id: string, title: string): Promise<void> {
 	await updateDoc(doc(db, "asignaturas", id), { "course.title": title, updatedAt: serverTimestamp() });
 }
 
+/**
+ * Elimina completamente una asignatura y todos sus recursos hijos.
+ */
 export async function deleteAssignment(id: string): Promise<void> {
 	const resourceSnapshot = await getDocs(collection(db, "asignaturas", id, "recursos"));
 	for (let offset = 0; offset < resourceSnapshot.docs.length; offset += 450) {
@@ -119,6 +145,9 @@ export async function deleteAssignment(id: string): Promise<void> {
 	await deleteDoc(doc(db, "asignaturas", id));
 }
 
+/**
+ * Crea un recurso vacío dentro de una unidad específica para que luego se complete.
+ */
 export async function createResource(assignmentId: string, unit: CourseUnit, title: string): Promise<string> {
 	const created = await addDoc(collection(db, "asignaturas", assignmentId, "recursos"), {
 		title,
@@ -134,6 +163,9 @@ export async function createResource(assignmentId: string, unit: CourseUnit, tit
 	return created.id;
 }
 
+/**
+ * Retorna un recurso concreto según el permiso del usuario actual.
+ */
 export async function getResource(assignmentId: string, resourceId: string, role: UserRole): Promise<ResourceSummary | null> {
 	const resourceRef = doc(db, "asignaturas", assignmentId, "recursos", resourceId);
 	const snapshot = await getDoc(resourceRef);
@@ -143,10 +175,16 @@ export async function getResource(assignmentId: string, resourceId: string, role
 	return resource;
 }
 
+/**
+ * Actualiza campos de un recurso sin reemplazar el documento completo.
+ */
 export async function updateResource(assignmentId: string, resourceId: string, changes: Partial<ResourceSummary>): Promise<void> {
 	await updateDoc(doc(db, "asignaturas", assignmentId, "recursos", resourceId), changes);
 }
 
+/**
+ * Elimina un recurso concreto de una asignatura.
+ */
 export async function deleteResource(assignmentId: string, resourceId: string): Promise<void> {
 	await deleteDoc(doc(db, "asignaturas", assignmentId, "recursos", resourceId));
 }

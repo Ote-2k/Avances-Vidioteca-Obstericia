@@ -1,3 +1,10 @@
+/**
+ * Paneles principales de trabajo de la videoteca.
+ *
+ * Aquí se reúnen las pantallas de alumno, profesor, gestión de asignaturas y
+ * edición de recursos. La intención es mantener la lógica de negocio de la app
+ * separada de la parte visual y de autenticación.
+ */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { collection, deleteDoc, doc, getDocs, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
@@ -10,6 +17,9 @@ import { addCourseComment, addResourceComment, createAssignment, createResource,
 import type { CourseView } from "../services/courses";
 import type { CourseComment, CourseSummary, ResourceMaterial, ResourcePopup, ResourceSummary } from "../types";
 
+/**
+ * Layout base para todas las vistas internas de la videoteca.
+ */
 function WorkspaceLayout({ title, children }: React.PropsWithChildren<{ title: string }>) {
 	const { profile, logout } = useAuth();
 	return (
@@ -26,6 +36,9 @@ function WorkspaceLayout({ title, children }: React.PropsWithChildren<{ title: s
 	);
 }
 
+/**
+ * Enlace de material de apoyo que soporta archivos locales y URLs externas.
+ */
 function MaterialLink({ material }: { material: ResourceMaterial }) {
 	const [href, setHref] = useState(material.url || "");
 	const [missing, setMissing] = useState(false);
@@ -62,6 +75,10 @@ interface NotificationItem {
 	date: number;
 }
 
+/**
+ * Centro de notificaciones del usuario activo.
+ * Sirve para mostrar avisos relativos a asignaturas, comentarios o tareas.
+ */
 function NotificationCenter() {
 	const { profile } = useAuth();
 	const [items, setItems] = useState<NotificationItem[]>([]);
@@ -101,6 +118,10 @@ function NotificationCenter() {
 	</section>;
 }
 
+/**
+ * Vista principal del estudiante.
+ * Muestra las asignaturas en las que está matriculado y permite entrar a cada curso.
+ */
 export function StudentPage() {
 	const { profile } = useAuth();
 	const [courses, setCourses] = useState<CourseSummary[]>([]);
@@ -125,6 +146,10 @@ export function StudentPage() {
 	</WorkspaceLayout>;
 }
 
+/**
+ * Vista principal del profesor.
+ * Permite crear asignaturas, renombrarlas, borrarlas y acceder a la edición del contenido.
+ */
 export function ProfessorPage() {
 	const { profile } = useAuth();
 	const navigate = useNavigate();
@@ -171,6 +196,10 @@ export function ProfessorPage() {
 	</WorkspaceLayout>;
 }
 
+/**
+ * Página de detalle de una asignatura.
+ * Contiene la administración de unidades, alumnos, recursos, comentarios y edición del curso.
+ */
 export function CoursePage() {
 	const { assignmentId } = useParams();
 	const { profile } = useAuth();
@@ -287,6 +316,10 @@ export function CoursePage() {
 	</WorkspaceLayout>;
 }
 
+/**
+ * Página de detalle de un recurso educativo.
+ * Gestiona reproducción, material adjunto, pop-ups y comentarios del recurso activo.
+ */
 export function ResourcePage() {
 	const { resourceId } = useParams();
 	const { assignmentId } = useParams();
@@ -459,6 +492,9 @@ export function ResourcePage() {
 	</WorkspaceLayout>;
 }
 
+/**
+ * Panel administrativo para gestionar usuarios y roles del sistema.
+ */
 export function AdminPage() {
 	const [users, setUsers] = useState<{ uid: string; email: string; displayName: string; role: string }[]>([]);
 	const [status, setStatus] = useState("Cargando usuarios...");

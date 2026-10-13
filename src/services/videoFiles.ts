@@ -1,3 +1,10 @@
+/**
+ * Gestión de videos locales con transcodificación en navegador.
+ *
+ * Este módulo toma videos subidos por el profesor, los convierte a WebM y los
+ * almacena localmente para que puedan reproducirse sin depender únicamente del
+ * almacenamiento en remoto.
+ */
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import coreURL from "@ffmpeg/core?url";
@@ -16,6 +23,9 @@ function openVideoDatabase(): Promise<IDBDatabase> {
 	});
 }
 
+/**
+ * Crea o reutiliza la instancia de FFmpeg para convertir un video a WebM.
+ */
 async function getFFmpeg(onProgress?: (progress: number) => void): Promise<FFmpeg> {
 	if (!ffmpegPromise) {
 		const ffmpeg = new FFmpeg();
@@ -25,6 +35,9 @@ async function getFFmpeg(onProgress?: (progress: number) => void): Promise<FFmpe
 	return ffmpegPromise;
 }
 
+/**
+ * Transcodifica un video a WebM y lo guarda en IndexedDB usando una clave estable.
+ */
 export async function saveTranscodedVideo(key: string, file: File, onProgress?: (progress: number) => void): Promise<void> {
 	if (file.size > 250 * 1024 * 1024) throw new Error("El video original supera el límite de 250 MB.");
 	const ffmpeg = await getFFmpeg(onProgress);
@@ -52,6 +65,9 @@ export async function saveTranscodedVideo(key: string, file: File, onProgress?: 
 	}
 }
 
+/**
+ * Recupera la URL de un video local almacenado en el navegador.
+ */
 export async function getLocalVideoUrl(key: string): Promise<string> {
 	const database = await openVideoDatabase();
 	const video = await new Promise<Blob | undefined>((resolve, reject) => {

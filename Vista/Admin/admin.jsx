@@ -1,3 +1,9 @@
+/**
+ * Panel administrativo legacy para gestionar usuarios y roles.
+ *
+ * Esta vista reemplaza la administración clásica de la aplicación y permite
+ * crear profesores, cambiar roles y eliminar perfiles desde la UI administrativa.
+ */
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { auth, db } from "../../firebase-config.js";
