@@ -1289,6 +1289,25 @@ await window.VideotecaStoreReady;
 			window.VideotecaStore.deleteResource(resourceId);
 		}
 	});
+	
+	// ==========================================================================
+	// LÓGICA DEL BOTÓN VOLVER (SABER SI ES ALUMNO O PROFESOR)
+	// ==========================================================================
+	const btnBack = document.querySelector("#btn-back-to-course");
+	if (btnBack) {
+		btnBack.addEventListener("click", () => {
+			const currentAssignmentId = window.VideotecaStore.getAssignmentId();
+			
+			if (isTeacher) {
+				// Redirigir a la vista de edición de la asignatura para el Profesor
+				window.location.href = `asignatura-1.html?asignatura=${encodeURIComponent(currentAssignmentId)}`;
+			} else {
+				// Redirigir a la vista del Alumno con la asignatura seleccionada
+				window.location.href = `../../index.html?asignatura=${encodeURIComponent(currentAssignmentId)}`;
+			}
+		});
+	}
+	
 	if (isCreatingResource) setEditing(true);
 	else {
 		renderResource();
