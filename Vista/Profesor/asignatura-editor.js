@@ -195,6 +195,7 @@ await window.VideotecaStoreReady;
 			card.append(openLink, menu);
 			(unitGrids.get(resource.unitId) || unitGrids.get("unidad-principal"))?.append(card);
 		});
+		renderEnrolledStudents();
 		courseSaveStatus.textContent = statusMessage;
 	}
 
@@ -603,6 +604,83 @@ await window.VideotecaStoreReady;
 		commentInput.focus();
 	});
 
+	// ==========================================================================
+	// GESTIÓN DE ESTUDIANTES INSCRITOS (DIBUJAR Y DESINSCRIBIR)
+	// ==========================================================================
+	function renderEnrolledStudents() {
+		const container = document.querySelector("#enrolled-students-list");
+		if (!container) return;
+
+		const data = window.VideotecaStore.get();
+		const enrolled = data.course.estudiantesInscritos || [];
+
+		container.replaceChildren();
+
+		if (!enrolled.length) {
+			const emptyMsg = document.createElement("p");
+			emptyMsg.className = "unit-empty";
+			emptyMsg.textContent = "No hay alumnos inscritos en esta asignatura.";
+			container.append(emptyMsg);
+			return;
+		}
+
+		enrolled.forEach((email) => {
+			const chip = document.createElement("div");
+			chip.className = "student-chip";
+
+			const emailLabel = document.createElement("span");
+			emailLabel.textContent = email;
+
+			const removeBtn = document.createElement("button");
+			removeBtn.type = "button";
+			removeBtn.className = "btn-remove-student";
+			removeBtn.textContent = "✕";
+			removeBtn.setAttribute("aria-label", `Quitar a ${email}`);
+
+			removeBtn.addEventListener("click", async () => {
+				if (window.confirm(`¿Seguro que deseas desinscribir a "${email}" de esta asignatura?`)) {
+					try {
+						await window.VideotecaStore.removeStudentFromAssignment(email);
+						courseSaveStatus.textContent = `Estudiante ${email} removido.`;
+						data.course.estudiantesInscritos = enrolled.filter((e) => e !== email);
+						renderEnrolledStudents();
+					} catch (err) {
+						console.error("Error al quitar estudiante:", err);
+						courseSaveStatus.textContent = "No se pudo remover al estudiante.";
+					}
+				}
+			});
+
+			chip.append(emailLabel, removeBtn);
+			container.append(chip);
+		});
+	}
+
+	const enrollForm = document.querySelector("#enroll-student-form");
+	if (enrollForm) {
+		enrollForm.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const input = enrollForm.querySelector("input[type='email']");
+			const email = input.value.trim().toLowerCase();
+			if (!email) return;
+
+			try {
+				await window.VideotecaStore.addStudentToAssignment(email);
+				input.value = "";
+				const data = window.VideotecaStore.get();
+				if (!data.course.estudiantesInscritos) data.course.estudiantesInscritos = [];
+				data.course.estudiantesInscritos.push(email);
+				renderEnrolledStudents();
+				courseSaveStatus.textContent = `Alumno ${email} inscrito correctamente.`;
+			} catch (err) {
+				console.error("Error al inscribir:", err);
+				courseSaveStatus.textContent = "Error al inscribir alumno.";
+			}
+		});
+	}
+
+
 	renderCourse();
 	renderComments();
+	renderEnrolledStudents();
 })();

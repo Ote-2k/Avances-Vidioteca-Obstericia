@@ -783,6 +783,24 @@ await window.VideotecaStoreReady;
 		window.history.replaceState(null, "", `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}`);
 		setEditing(false);
 		resourceSaveStatus.textContent = "Recurso creado. Ya aparece en la asignatura.";
+		
+		// DISPARADOR DE NOTIFICACIÓN A ALUMNOS INSCRITOS
+		try {
+			const currentCourse = window.VideotecaStore.get().course;
+			const enrolled = currentCourse.estudiantesInscritos || [];
+			const resourceTitleText = resourceTitle.textContent.trim();
+
+			enrolled.forEach((studentEmail) => {
+				window.VideotecaStore.sendNotification({
+					usuarioUid: studentEmail, // Si se busca vincular por correo/UID
+					titulo: "Nueva clase disponible",
+					mensaje: `Se ha publicado "${resourceTitleText}" en la asignatura ${currentCourse.title}.`,
+					link: `index.html?asignatura=${window.VideotecaStore.getAssignmentId()}`
+				});
+			});
+		} catch (notifErr) {
+			console.error("Error al notificar nuevo recurso:", notifErr);
+		}
 	}
 
 	function setEditorAction(action) {
@@ -1219,19 +1237,41 @@ await window.VideotecaStoreReady;
 		renderComments();
 	});
 
-	commentList.addEventListener("submit", (event) => {
+	commentList.addEventListener("submit", async (event) => {
 		const replyForm = event.target.closest("[data-reply-form-for]");
 		if (!replyForm) return;
 		event.preventDefault();
 		const text = replyForm.elements.reply.value.trim();
 		if (!text) return;
+
+		const parentCommentId = replyForm.dataset.replyFormFor;
+
+		// 1. Guardar comentario
 		window.VideotecaStore.addComment(resourceId, {
-			parentId: replyForm.dataset.replyFormFor,
+			parentId: parentCommentId,
 			date: "Ahora",
 			text
 		});
+
+		// 2. Notificar al alumno
+		try {
+			const comments = window.VideotecaStore.get().resources[resourceId]?.comments || [];
+			const parentComment = comments.find((c) => c.id === parentCommentId);
+
+			if (parentComment && parentComment.authorUid) {
+				await window.VideotecaStore.sendNotification({
+					usuarioUid: parentComment.authorUid,
+					titulo: "El profesor respondió tu duda",
+					mensaje: `Respuesta recibida en la clase "${resourceTitle.textContent.trim()}".`,
+					link: `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}`
+				});
+			}
+		} catch (notifErr) {
+			console.error("Error al enviar notificación de respuesta:", notifErr);
+		}
+
 		renderComments();
-		resourceSaveStatus.textContent = "Respuesta publicada.";
+		resourceSaveStatus.textContent = "Respuesta publicada y notificación enviada.";
 	});
 
 	commentForm.addEventListener("submit", (event) => {

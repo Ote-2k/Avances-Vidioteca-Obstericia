@@ -3,6 +3,8 @@ import { signOut } from "firebase/auth";
 import { deleteObject, ref } from "firebase/storage";
 import {
 	addDoc,
+	arrayRemove,
+	arrayUnion,
 	collection,
 	deleteDoc,
 	doc,
@@ -360,6 +362,37 @@ window.VideotecaStoreReady = (async () => {
 			});
 			return true;
 		},
+
+		// Agregar alumno a la asignatura
+		async addStudentToAssignment(studentEmail) {
+			const assignmentId = this.getAssignmentId();
+			const assignmentRef = doc(db, "asignaturas", assignmentId);
+			await updateDoc(assignmentRef, {
+				estudiantesInscritos: arrayUnion(studentEmail.toLowerCase())
+			});
+		},
+
+		// Remover alumno de la asignatura
+		async removeStudentFromAssignment(studentEmail) {
+			const assignmentId = this.getAssignmentId();
+			const assignmentRef = doc(db, "asignaturas", assignmentId);
+			await updateDoc(assignmentRef, {
+				estudiantesInscritos: arrayRemove(studentEmail.toLowerCase())
+			});
+		},
+
+		// Crear notificación en Firestore
+		async sendNotification({ usuarioUid, titulo, mensaje, link }) {
+			await addDoc(collection(db, "notificaciones"), {
+				usuarioUid,
+				titulo,
+				mensaje,
+				link,
+				leido: false,
+				fecha: new Date().toISOString()
+			});
+		},
+
 		saveCourse(updates) {
 			requireTeacher();
 			data.course = { ...data.course, ...updates };
