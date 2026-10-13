@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro Estudiantil | Videoteca</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+  
+    /* Ajuste para alinear el input del usuario con el selector de dominio */
+    .email-builder {
+      display: flex;
+      flex-direction: column;
+	  gap: 10px;
+    }
+    .email-builder input {
+      flex: 1;
+    }
+    .email-builder select {
+	  width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--color-3);
+      background-color: var(--color-1);
+      color: var(--color-6);
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .email-builder select:focus {
+      border-color: var(--color-4);
+    }
+  </style>
+</head>
+<body class="login-body">
+
+  <div class="login-container">
+    
+    <!-- LADO IZQUIERDO: Imagen de fondo -->
+    <div class="login-hero">
+      <div class="hero-text">
+        <h2>Crea tu cuenta</h2>
+        <p>Accede a las videotecas y recursos de tus asignaturas.</p>
+      </div>
+    </div>
+
+    <!-- LADO DERECHO: Formulario de Registro -->
+    <div class="login-panel">
+      <div class="login-content">
+        
+        <div class="login-logo">
+          <img src="LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO.svg" alt="Logo Universidad Central">
+        </div>
+
+        <h1 class="login-title">Registro Estudiantil</h1>
+        <p class="login-subtitle">Ingresa tus datos institucionales para crear tu cuenta</p>
+
+        <form id="register-form" class="login-form">
+          
+          <!-- Nombre Completo -->
+          <div class="input-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" placeholder="Ej. Camila Silva" required>
+          </div>
+
+          <!-- Correo Institucional con Autocompletado/Selección -->
+          <div class="input-group">
+            <label for="email-user">Correo institucional</label>
+            <div class="email-builder">
+              <input type="text" id="email-user" placeholder="nombre.apellido" required>
+              <select id="email-domain">
+                <option value="@alumnos.ucentral.cl">@alumnos.ucentral.cl</option>
+                <option value="@ucen.cl">@ucen.cl</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Contraseña -->
+          <div class="input-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="Mínimo 6 caracteres" required minlength="6">
+          </div>
+
+          <!-- Confirmar Contraseña -->
+          <div class="input-group">
+            <label for="confirm-password">Confirmar contraseña</label>
+            <input type="password" id="confirm-password" placeholder="Repite tu contraseña" required minlength="6">
+          </div>
+
+          <!-- Botón de Registro -->
+          <button type="submit" class="btn-submit">Crear cuenta</button>
+
+          <!-- Enlace de regreso al Login -->
+          <div class="forgot-password" style="text-align: center; margin-top: 10px;">
+            <a href="login.html">¿Ya tienes cuenta? Inicia sesión aquí</a>
+          </div>
+
+        </form>
+
+        <p id="register-status" style="margin-top: 15px; font-size: 0.85rem; color: var(--color-7);" role="status" aria-live="polite"></p>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="registro.js"></script>
+</body>
+</html>
