@@ -19,24 +19,58 @@
 		<h1 class="site-title">Videoteca UCEN</h1>
 	</div>
     <div class="student-profile">
+      
+      <!-- CONTENEDOR DE NOTIFICACIONES -->
+      <div class="notifications-wrapper">
+        <button id="btn-notifications" class="btn-icon" type="button" aria-label="Notificaciones">
+          🔔 <span id="notif-badge" class="notif-badge" hidden>0</span>
+        </button>
+        
+        <div id="notif-dropdown" class="notif-dropdown" hidden>
+          <header class="notif-header">
+            <span>Notificaciones</span>
+            <button id="btn-mark-all-read" class="btn-link" type="button">Marcar leídas</button>
+          </header>
+          <div id="notif-list" class="notif-list">
+            <p class="student-status">Sin notificaciones</p>
+          </div>
+        </div>
+      </div>
+
       <div class="user-badge-info">
         <strong id="student-user-name">Estudiante</strong>
         <span class="badge-role">Alumno</span>
       </div>
+      
       <button id="btn-logout" class="btn-logout" type="button">Cerrar sesión</button>
     </div>
   </header>
 
   <div class="student-layout">
-    <aside class="student-sidebar" aria-label="Asignaturas disponibles">
-      <h2>Asignaturas</h2>
-      <nav class="student-assignment-list" id="student-assignment-list"></nav>
+    <!-- BARRA LATERAL CON PESTAÑAS -->
+    <aside class="student-sidebar" aria-label="Navegación principal">
+      <div class="sidebar-tabs">
+        <button id="tab-courses" class="tab-btn active" type="button">Ramos</button>
+        <button id="tab-comments" class="tab-btn" type="button">Comentarios</button>
+      </div>
+
+      <!-- VISTA 1: ÁRBOL DE ASIGNATURAS -->
+      <div id="sidebar-courses-view">
+        <nav class="student-assignment-list" id="student-assignment-list"></nav>
+      </div>
+
+      <!-- VISTA 2: LISTA DE COMENTARIOS CON PAGINACIÓN -->
+      <div id="sidebar-comments-view" hidden>
+        <div id="student-comments-list" class="student-comments-sidebar-list"></div>
+        <div id="comments-pagination" class="pagination-controls mini-pagination"></div>
+      </div>
     </aside>
 
     <main class="student-main">
       <h1 id="student-course-title">Asignaturas</h1>
       <p class="student-status" id="student-status" role="status" aria-live="polite">Cargando asignaturas...</p>
       <div id="student-course-content"></div>
+      <div id="video-pagination" class="pagination-controls"></div>
     </main>
   </div>
 

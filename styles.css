@@ -359,6 +359,7 @@ body.login-body {
 
 .student-resource-link {
   display: block;
+  border: 2px solid var(--color-4);
   padding: 6px 8px;
   border-radius: 4px;
   color: var(--color-4);
@@ -491,6 +492,356 @@ body.index-body {
   .student-resource-grid { grid-template-columns: 1fr; }
 }
 
+/* ==========================================================================
+   ESTILOS DEL SISTEMA DE NOTIFICACIONES
+   ========================================================================== */
+
+.notifications-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  position: relative;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: var(--color-3);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.notif-dropdown {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid var(--color-3);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.notif-dropdown[hidden] {
+  display: none !important;
+}
+
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--color-1);
+  border-bottom: 1px solid var(--color-3);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-4);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.notif-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.notif-item:hover {
+  background: #f9fafb;
+}
+
+.notif-item.unread {
+  background: #eff6ff;
+}
+
+.notif-item-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: var(--color-6);
+}
+
+.notif-item-msg {
+  font-size: 0.78rem;
+  color: #4b5563;
+  margin: 0 0 4px;
+}
+
+.notif-item-date {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+
+/* ==========================================================================
+   PESTAÑAS LATERALES Y PAGINACIÓN
+   ========================================================================== */
+
+/* Pestañas de la Barra Lateral */
+.sidebar-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-3);
+  padding-bottom: 8px;
+}
+
+.tab-btn {
+  flex: 1;
+  background: var(--color-2);
+  border: 2px solid var(--color-4);
+  padding: 8px 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color:var(--color-4);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  background: var(--color-3);
+  color: var(--color-6);
+}
+
+.tab-btn.active {
+  background: var(--color-3);
+  color: var(--color-1);
+  border-bottom: 2px solid var(--color-4);
+}
+
+/* Controles de Paginación */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 12px 0;
+}
+
+.pagination-btn {
+  background: var(--color-1);
+  border: 1px solid var(--color-3);
+  color: var(--color-6);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--color-3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.85rem;
+  color: var(--color-3);
+}
+
+/* Ajustes de Comentarios en Barra Lateral */
+.student-comments-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-comment-card {
+  padding: 10px;
+  border: 1px solid var(--color-3);
+  border-radius: 6px;
+  background: var(--color-2);
+  font-size: 0.8rem;
+}
+
+.sidebar-comment-card a {
+  font-weight: bold;
+  color: var(--color-4);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sidebar-comment-card p {
+  margin: 0 0 6px;
+  color: var(--color-6);
+}
+
+.mini-pagination {
+  font-size: 0.75rem;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* ==========================================================================
+   ESTILOS PARA EL MODAL DE HISTORIAL DE COMENTARIOS
+   ========================================================================== */
+
+.btn-secondary {
+  background: var(--color-3);
+  color: var(--color-6);
+  border: 1px solid var(--color-3);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #d1d5db;
+}
+
+/* Fondo oscuro / Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-overlay[hidden] {
+  display: none !important;
+}
+
+/* Caja del Modal */
+.modal-content {
+  background: #ffffff;
+  width: 90%;
+  max-width: 650px;
+  max-height: 80vh;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-3);
+  background: var(--color-1);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-6);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Tarjeta individual de comentario */
+.comment-card {
+  border: 1px solid var(--color-3);
+  border-radius: 6px;
+  padding: 14px;
+  background: #f9fafb;
+}
+
+.comment-card-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.comment-card-title {
+  font-weight: 600;
+  color: var(--color-4);
+  text-decoration: none;
+}
+
+.comment-card-title:hover {
+  text-decoration: underline;
+}
+
+.comment-card-text {
+  font-size: 0.9rem;
+  color: var(--color-2);
+  margin: 0 0 10px;
+}
+
+/* Hilo de respuesta del profesor */
+.comment-reply {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #eff6ff;
+  border-left: 3px solid var(--color-4);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.comment-reply-author {
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 2px;
+}
 
 /* ==========================================================================
    VIDEOTECA.HTML
