@@ -121,24 +121,44 @@ function renderAssignment(assignment, selectedId, assignmentData) {
 	status.textContent = visibleResources.length ? "Selecciona una clase para abrirla." : "Esta asignatura aún no tiene clases publicadas.";
 }
 
-// Cargar nombre del estudiante autenticado en el Header
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    const userNameElement = document.querySelector("#student-user-name");
-    if (userNameElement) {
-      userNameElement.textContent = user.displayName || user.email.split("@")[0];
-    }
-  }
-});
+// Carga principal controlada por el estado de autenticación
+onAuthStateChanged(auth, async (user) => {
+	if (!user) {
+		window.location.href = "login.html";
+		return;
+	}
 
-try {
-	assignments = await store.getAssignments();
-	if (!assignments.length) {
-		status.textContent = "Todavía no hay asignaturas publicadas.";
-	} else {
+	// 1. Mostrar nombre o correo del alumno en el header
+	const userNameElement = document.querySelector("#student-user-name");
+	if (userNameElement) {
+		userNameElement.textContent = user.displayName || user.email.split("@")[0];
+	}
+
+	// 2. Cargar asignaturas y filtrar por inscritos
+	try {
+		const userEmail = user.email.toLowerCase();
+		const allAssignments = await store.getAssignments();
+
+		// Filtrar: El alumno solo ve asignaturas si está en 'estudiantesInscritos' (o si la asignatura aún no tiene esa lista)
+		assignments = allAssignments.filter((item) => {
+			if (!item.estudiantesInscritos || !Array.isArray(item.estudiantesInscritos)) {
+				return true; // Si aún no existe el arreglo, permite lectura para retrocompatibilidad
+			}
+			return item.estudiantesInscritos.map((e) => e.toLowerCase()).includes(userEmail);
+		});
+
+		if (!assignments.length) {
+			status.textContent = "No tienes asignaturas inscritas o disponibles actualmente.";
+			courseTitle.textContent = "Sin Asignaturas";
+			courseContent.replaceChildren();
+			assignmentList.replaceChildren();
+			return;
+		}
+
 		const requestedId = new URLSearchParams(window.location.search).get("asignatura");
 		const selected = assignments.find((item) => item.id === requestedId) || assignments[0];
-		// Carga las unidades de las demás asignaturas para construir el árbol lateral.
+
+		// Carga las unidades de las asignaturas permitidas
 		const assignmentData = new Map(await Promise.all(assignments.map(async (item) => {
 			try {
 				return [item.id, await store.getStudentAssignment(item.id)];
@@ -147,20 +167,21 @@ try {
 				return [item.id, null];
 			}
 		})));
+
 		const assignment = assignmentData.get(selected.id);
 		if (!assignment) {
 			status.textContent = "No se pudo cargar esta asignatura.";
 		} else {
 			renderAssignment({ ...selected, ...assignment }, selected.id, assignmentData);
 		}
+	} catch (error) {
+		status.textContent = "No se pudieron cargar las asignaturas. Comprueba tu sesión y la conexión.";
+		console.error("Error al obtener asignaturas:", error);
 	}
-} catch (error) {
-	status.textContent = "No se pudieron cargar las asignaturas. Comprueba tu sesión y la conexión.";
-	console.error(error);
-}
+});
 
+// Evento de Cerrar Sesión
 document.querySelector("#btn-logout").addEventListener("click", async () => {
-	const { auth } = await import("../../firebase-config.js");
 	const { signOut } = await import("firebase/auth");
 	await signOut(auth);
 	window.location.href = "login.html";
