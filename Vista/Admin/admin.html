@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Panel de Administración | Videoteca UCEN</title>
+	<link rel="stylesheet" href="../../styles.css">
+</head>
+<body class="admin-view">
+	<header class="app-header">
+		<div class="header-brand">
+			<h1>Videoteca UCEN</h1>
+			<span class="brand-role">· Administración</span>
+		</div>
+		<div class="header-user">
+			<span id="profile-role">Admin</span>
+			<button id="logout-button" class="btn-logout" type="button">Cerrar Sesión</button>
+		</div>
+	</header>
+
+	<main class="admin-container">
+		<h2>Gestión Global de Usuarios y Roles</h2>
+		
+		<!-- Buscador e Info de Usuarios -->
+		<div class="admin-controls">
+			<input type="search" id="user-search-input" placeholder="Buscar usuario por correo o nombre..." />
+			<span id="user-count-badge">0 usuarios</span>
+		</div>
+
+		<!-- Status / Alertas -->
+		<p id="admin-save-status" class="status-message" aria-live="polite"></p>
+
+		<!-- SECCIÓN: CREAR NUEVA CUENTA DE PROFESOR -->
+		<section class="admin-card">
+		  <h3>Crear Cuenta de Profesor</h3>
+		  <form id="create-teacher-form" class="admin-form">
+			<div class="form-group">
+			  <label for="teacher-email">Correo Institucional / Docente</label>
+			  <input type="email" id="teacher-email" placeholder="profesor@docente.cl" required />
+			</div>
+
+			<div class="form-group">
+			  <label for="teacher-name">Nombre Completo</label>
+			  <input type="text" id="teacher-name" placeholder="Prof. Juan Pérez" required />
+			</div>
+
+			<div class="form-group">
+			  <label for="teacher-password">Contraseña Inicial</label>
+			  <input type="password" id="teacher-password" placeholder="Mínimo 6 caracteres" minlength="6" required />
+			</div>
+
+			<button type="submit" id="btn-create-teacher" class="btn-primary">
+			  Registrar Profesor
+			</button>
+		  </form>
+		</section>
+		
+
+		<!-- Tabla de Usuarios -->
+		<section class="table-card">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>Usuario / Correo</th>
+						<th>Rol Actual</th>
+						<th>Acciones</th>
+					</tr>
+				</thead>
+				<tbody id="user-table-body">
+					<!-- Se renderiza dinámicamente desde admin.js -->
+				</tbody>
+			</table>
+		</section>
+	</main>
+
+	<script type="module" src="admin.js"></script>
+</body>
+</html>
