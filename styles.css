@@ -244,6 +244,18 @@ body.login-body {
   border-bottom: 1px solid var(--color-3);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espacio entre el logo y el título */
+}
+
+/* tamaño del logo*/
+.ucen-logo img {
+  height: 40px; 
+  width: auto;
+}
+
 .site-title {
   font-size: 1.25rem;
   font-weight: 700;
