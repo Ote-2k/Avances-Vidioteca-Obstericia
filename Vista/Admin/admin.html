@@ -3,6 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script>window.location.replace("/admin");</script>
 	<title>Panel de Administración | Videoteca UCEN</title>
 	<link rel="stylesheet" href="../../styles.css">
 </head>
@@ -21,14 +22,7 @@
 	<main class="admin-container">
 		<h2>Gestión Global de Usuarios y Roles</h2>
 		
-		<!-- Buscador e Info de Usuarios -->
-		<div class="admin-controls">
-			<input type="search" id="user-search-input" placeholder="Buscar usuario por correo o nombre..." />
-			<span id="user-count-badge">0 usuarios</span>
-		</div>
-
-		<!-- Status / Alertas -->
-		<p id="admin-save-status" class="status-message" aria-live="polite"></p>
+		<div id="admin-users-root"></div>
 
 		<!-- SECCIÓN: CREAR NUEVA CUENTA DE PROFESOR -->
 		<section class="admin-card">
@@ -56,23 +50,7 @@
 		</section>
 		
 
-		<!-- Tabla de Usuarios -->
-		<section class="table-card">
-			<table class="admin-table">
-				<thead>
-					<tr>
-						<th>Usuario / Correo</th>
-						<th>Rol Actual</th>
-						<th>Acciones</th>
-					</tr>
-				</thead>
-				<tbody id="user-table-body">
-					<!-- Se renderiza dinámicamente desde admin.js -->
-				</tbody>
-			</table>
-		</section>
 	</main>
 
-	<script type="module" src="admin.js"></script>
 </body>
 </html>

@@ -32,5 +32,6 @@ service firebase.storage {
         && request.resource.contentType == 'video/webm';
       allow delete: if teacherOwns(assignmentId);
     }
+
   }
 }
