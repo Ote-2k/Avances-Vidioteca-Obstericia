@@ -44,8 +44,10 @@ function normalizeResource(id: string, data: Record<string, unknown>): ResourceS
 }
 
 export async function listAssignments(role: UserRole, uid: string, email = ""): Promise<CourseSummary[]> {
+	const normalizedEmail = email.trim().toLowerCase();
+	if (role === "alumno" && !normalizedEmail) return [];
 	const assignmentsQuery = role === "alumno"
-		? query(assignments, where("published", "==", true))
+		? query(assignments, where("published", "==", true), where("estudiantesInscritos", "array-contains", normalizedEmail))
 		: query(assignments, where("ownerUid", "==", uid));
 	const snapshot = await getDocs(assignmentsQuery);
 	return snapshot.docs.map((item) => {
@@ -60,16 +62,16 @@ export async function listAssignments(role: UserRole, uid: string, email = ""): 
 			estudiantesInscritos: Array.isArray(data.estudiantesInscritos) ? data.estudiantesInscritos : undefined
 		};
 	}).filter((assignment) => role !== "alumno"
-		|| !assignment.estudiantesInscritos
-		|| assignment.estudiantesInscritos.some((studentEmail) => studentEmail.toLowerCase() === email.toLowerCase()));
+		|| assignment.estudiantesInscritos?.some((studentEmail) => studentEmail.toLowerCase() === normalizedEmail));
 }
 
-export async function getCourse(assignmentId: string, role: UserRole): Promise<CourseView | null> {
+export async function getCourse(assignmentId: string, role: UserRole, email = ""): Promise<CourseView | null> {
 	const assignmentRef = doc(db, "asignaturas", assignmentId);
 	const snapshot = await getDoc(assignmentRef);
 	if (!snapshot.exists()) return null;
 	const saved = snapshot.data();
-	if (role === "alumno" && saved.published !== true) return null;
+	const enrolledEmails = Array.isArray(saved.estudiantesInscritos) ? saved.estudiantesInscritos as string[] : [];
+	if (role === "alumno" && (saved.published !== true || !enrolledEmails.some((studentEmail) => studentEmail.toLowerCase() === email.trim().toLowerCase()))) return null;
 	const resourceCollection = collection(assignmentRef, "recursos");
 	const resourceSnapshot = await getDocs(role === "alumno"
 		? query(resourceCollection, where("isHidden", "==", false))
@@ -85,6 +87,7 @@ export async function getCourse(assignmentId: string, role: UserRole): Promise<C
 		coverUrl: String(saved.course?.coverUrl || ""),
 		ownerUid: saved.ownerUid,
 		published: saved.published === true,
+		estudiantesInscritos: enrolledEmails,
 		units,
 		comments: Array.isArray(saved.comments?.course) ? saved.comments.course as CourseComment[] : [],
 		resources
@@ -167,4 +170,11 @@ export async function getResourceComments(assignmentId: string, resourceId: stri
 export async function updateCourse(assignmentId: string, changes: { title?: string; description?: string; units?: CourseUnit[] }): Promise<void> {
 	const updates = Object.fromEntries(Object.entries(changes).map(([key, value]) => [`course.${key}`, value]));
 	await updateDoc(doc(db, "asignaturas", assignmentId), { ...updates, updatedAt: serverTimestamp() });
+}
+
+export async function updateCourseStudents(assignmentId: string, emails: string[]): Promise<void> {
+	await updateDoc(doc(db, "asignaturas", assignmentId), {
+		estudiantesInscritos: [...new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean))],
+		updatedAt: serverTimestamp()
+	});
 }

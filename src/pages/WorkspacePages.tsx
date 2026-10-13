@@ -6,7 +6,7 @@ import { getApps, initializeApp } from "firebase/app";
 import { useAuth } from "../context/AuthContext";
 import { CommentThread } from "../components/CommentThread";
 import { auth, db } from "../firebase";
-import { addCourseComment, addResourceComment, createAssignment, createResource, deleteAssignment, deleteResource, getCourse, getResource, getResourceComments, listAssignments, renameAssignment, updateCourse, updateResource } from "../services/courses";
+import { addCourseComment, addResourceComment, createAssignment, createResource, deleteAssignment, deleteResource, getCourse, getResource, getResourceComments, listAssignments, renameAssignment, updateCourse, updateCourseStudents, updateResource } from "../services/courses";
 import type { CourseView } from "../services/courses";
 import type { CourseComment, CourseSummary, ResourceMaterial, ResourcePopup, ResourceSummary } from "../types";
 
@@ -181,11 +181,13 @@ export function CoursePage() {
 	const [commentText, setCommentText] = useState("");
 	const [editTitle, setEditTitle] = useState("");
 	const [editDescription, setEditDescription] = useState("");
+	const [studentEmail, setStudentEmail] = useState("");
+	const [enrollmentBusy, setEnrollmentBusy] = useState(false);
 	const navigate = useNavigate();
 	const isTeacher = profile?.role === "profesor";
 	const load = async () => {
 		if (!assignmentId || !profile) return;
-		const loaded = await getCourse(assignmentId, profile.role);
+		const loaded = await getCourse(assignmentId, profile.role, profile.email);
 		setCourse(loaded);
 		setEditTitle(loaded?.title || "");
 		setEditDescription(loaded?.description || "");
@@ -209,6 +211,33 @@ export function CoursePage() {
 			await load();
 			setStatus("Cambios guardados.");
 		} catch (error) { console.error(error); setStatus("No se pudieron guardar los cambios."); }
+	}
+	async function addStudent(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!assignmentId || !course) return;
+		const email = studentEmail.trim().toLowerCase();
+		if (!email || course.estudiantesInscritos?.includes(email)) return;
+		setEnrollmentBusy(true);
+		try {
+			await updateCourseStudents(assignmentId, [...(course.estudiantesInscritos || []), email]);
+			setStudentEmail("");
+			await load();
+			setStatus("Alumno inscrito en la asignatura.");
+		} catch (error) {
+			console.error(error);
+			setStatus("No se pudo inscribir al alumno.");
+		} finally { setEnrollmentBusy(false); }
+	}
+	async function removeStudent(email: string) {
+		if (!assignmentId || !course) return;
+		try {
+			await updateCourseStudents(assignmentId, (course.estudiantesInscritos || []).filter((studentEmail) => studentEmail !== email));
+			await load();
+			setStatus("Alumno retirado de la asignatura.");
+		} catch (error) {
+			console.error(error);
+			setStatus("No se pudo retirar al alumno.");
+		}
 	}
 	async function addUnit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -249,6 +278,7 @@ export function CoursePage() {
 		{status && <p className="status" role="status">{status}</p>}
 		{course && <>
 			{isTeacher ? <form className="course-edit-form" onSubmit={saveCourse}><label>Título<input value={editTitle} onChange={(event) => setEditTitle(event.target.value)} required /></label><label>Descripción<textarea value={editDescription} onChange={(event) => setEditDescription(event.target.value)} rows={3} /></label><button className="button button-primary">Guardar asignatura</button></form> : course.description && <p className="course-description">{course.description}</p>}
+			{isTeacher && <section className="enrollment-section"><h2>Alumnos inscritos</h2><form className="inline-form" onSubmit={addStudent}><input type="email" aria-label="Correo del alumno" placeholder="correo@institucion.cl" value={studentEmail} onChange={(event) => setStudentEmail(event.target.value)} required /><button className="button button-quiet" disabled={enrollmentBusy}>{enrollmentBusy ? "Guardando..." : "Inscribir alumno"}</button></form>{course.estudiantesInscritos?.length ? <ul className="enrollment-list">{course.estudiantesInscritos.map((email) => <li key={email}><span>{email}</span><button className="text-button" type="button" onClick={() => void removeStudent(email)} aria-label={`Retirar a ${email}`}>Retirar</button></li>)}</ul> : <p className="muted">Aún no hay alumnos inscritos.</p>}</section>}
 			{isTeacher && <><form className="inline-form" onSubmit={createNewResource}><input aria-label="Título del nuevo recurso" placeholder="Título del nuevo recurso" value={resourceTitle} onChange={(event) => setResourceTitle(event.target.value)} required /><button className="button button-primary">Crear recurso</button></form><form className="inline-form" onSubmit={addUnit}><input aria-label="Nombre de la unidad" placeholder="Nueva unidad" value={newUnit} onChange={(event) => setNewUnit(event.target.value)} required /><button className="button button-quiet">Agregar unidad</button></form></>}
 			{course.units.map((unit) => <section className="unit-block" key={unit.id}><header><h2>{unit.name}</h2><span>{course.resources.filter((resource) => resource.unitId === unit.id).length} recursos</span>{isTeacher && unit.id !== "unidad-principal" && <button className="button button-quiet" onClick={() => void removeUnit(unit.id)}>Eliminar unidad</button>}</header><div className="resource-list">{course.resources.filter((resource) => resource.unitId === unit.id).map((resource) => <article className="resource-row" key={resource.id}><Link to={`/profesor/asignaturas/${assignmentId}/recursos/${resource.id}`}><span>{resource.title}</span><small>{resource.duration || "Video educativo"}</small></Link>{isTeacher && <button className="button button-danger" onClick={() => void removeResource(resource.id, resource.title)}>Eliminar</button>}</article>)}</div></section>)}
 			{!course.resources.length && <p className="empty-state">Todavía no hay recursos disponibles.</p>}

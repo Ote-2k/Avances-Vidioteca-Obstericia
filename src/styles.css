@@ -77,6 +77,12 @@ h1, h2, h3 { font-family: Manrope, sans-serif; }
 .check-label input { width: 18px !important; min-height: 18px !important; }
 .breadcrumbs { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 18px; color: var(--muted); font-size: .9rem; }
 .course-description { max-width: 760px; color: var(--muted); line-height: 1.65; }
+.enrollment-section { max-width: 760px; margin: 24px 0; padding: 18px 0; border-block: 1px solid var(--line); }
+.enrollment-section h2 { margin-bottom: 8px; font-size: 1.1rem; }
+.enrollment-section .inline-form { margin: 12px 0; }
+.enrollment-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.enrollment-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.enrollment-list li span { overflow-wrap: anywhere; }
 .unit-block { margin: 26px 0; }
 .unit-block > header { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
 .unit-block h2 { margin: 0; padding: 12px 0; font-size: 1.1rem; }

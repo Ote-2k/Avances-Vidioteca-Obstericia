@@ -41,6 +41,7 @@ usuarios/{uid}
 
 asignaturas/{assignmentId}
 	ownerUid, published
+	estudiantesInscritos: [correos normalizados]
 	course: { title, description, coverUrl, units[] }
 	comments: { course: [], [resourceId]: [] }
 
@@ -68,7 +69,7 @@ Los alumnos pueden crear su cuenta desde `/registro`; las reglas solo permiten q
 
 Las vistas React actualizan su estado con hooks y persisten operaciones mediante `src/services/courses.ts`. Los comentarios y respuestas se agregan con `arrayUnion` para evitar que dos envíos simultáneos sobrescriban el hilo.
 
-Las consultas se filtran por `ownerUid` para profesores o por `published == true` para alumnos. Los alumnos reciben solo recursos `isHidden == false`; los borradores tampoco se muestran. `RoleGate` restringe rutas en el cliente y Firestore Rules aplica la autorización definitiva en el servidor.
+Las consultas se filtran por `ownerUid` para profesores. Para alumnos, se requiere `published == true` y que el correo autenticado esté en `estudiantesInscritos`; el profesor administra esa lista desde la asignatura. Las reglas Firestore aplican la misma matrícula al leer asignaturas y recursos, incluso al abrir una URL directamente. Los alumnos reciben solo recursos visibles; los borradores tampoco se muestran.
 
 ## Comentarios
 
@@ -126,8 +127,10 @@ El proyecto seleccionado por Firebase CLI está en `.firebaserc`. Instala Fireba
 3. Publica las reglas desde la raíz del repositorio:
 
 ```powershell
-firebase deploy --only firestore:rules
+firebase deploy --only firestore
 ```
+
+Este despliegue publica las reglas y el índice compuesto requerido para consultar asignaturas por publicación y correo de alumno.
 
 Firebase Storage es opcional para los videos nuevos. Solo si se habilita el bucket para videos antiguos se despliegan sus reglas con `firebase deploy --only storage` y se aplica [cors.json](cors.json) al bucket.
 
