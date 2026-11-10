@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs, urlparse
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -118,7 +120,110 @@ class AsignaturaApiTests(TestCase):
         response = self.client.get(self.list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual([item["id"] for item in response.data], [enrolled.pk])
+        self.assertEqual(
+            [item["id"] for item in response.data["results"]],
+            [enrolled.pk],
+        )
+
+    def test_assignment_list_can_filter_by_publication_status(self):
+        unpublished = Asignatura.objects.create(
+            title="Borrador",
+            owner=self.teacher,
+            published=False,
+        )
+        self.client.force_authenticate(self.teacher)
+
+        published_response = self.client.get(self.list_url, {"published": "true"})
+        unpublished_response = self.client.get(self.list_url, {"published": "false"})
+
+        self.assertEqual(
+            [item["id"] for item in published_response.data["results"]],
+            [self.assignment.pk],
+        )
+        self.assertEqual(
+            [item["id"] for item in unpublished_response.data["results"]],
+            [unpublished.pk],
+        )
+
+    def test_assignment_list_searches_title_and_description(self):
+        described = Asignatura.objects.create(
+            title="Clínica",
+            description="Atención prenatal y salud materna",
+            owner=self.teacher,
+        )
+        self.client.force_authenticate(self.teacher)
+
+        title_response = self.client.get(self.list_url, {"search": "Obstetricia"})
+        description_response = self.client.get(self.list_url, {"search": "prenatal"})
+
+        self.assertEqual(
+            [item["id"] for item in title_response.data["results"]],
+            [self.assignment.pk],
+        )
+        self.assertEqual(
+            [item["id"] for item in description_response.data["results"]],
+            [described.pk],
+        )
+
+    def test_assignment_list_can_order_results(self):
+        second = Asignatura.objects.create(
+            title="Biología",
+            owner=self.teacher,
+        )
+        self.client.force_authenticate(self.teacher)
+
+        response = self.client.get(self.list_url, {"ordering": "-title"})
+
+        self.assertEqual(
+            [item["id"] for item in response.data["results"]],
+            [self.assignment.pk, second.pk],
+        )
+
+    def test_assignment_list_supports_page_size_and_page_navigation(self):
+        assignments = [
+            Asignatura(title=f"Asignatura {index:02}", owner=self.teacher)
+            for index in range(12)
+        ]
+        Asignatura.objects.bulk_create(assignments)
+        self.client.force_authenticate(self.teacher)
+
+        response = self.client.get(self.list_url, {"page": 2, "page_size": 5})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 13)
+        self.assertEqual(
+            parse_qs(urlparse(response.data["next"]).query),
+            {"page": ["3"], "page_size": ["5"]},
+        )
+        self.assertEqual(
+            parse_qs(urlparse(response.data["previous"]).query),
+            {"page_size": ["5"]},
+        )
+        self.assertEqual(len(response.data["results"]), 5)
+
+    def test_assignment_list_caps_requested_page_size(self):
+        Asignatura.objects.bulk_create(
+            [
+                Asignatura(title=f"Asignatura {index:03}", owner=self.teacher)
+                for index in range(105)
+            ],
+        )
+        self.client.force_authenticate(self.teacher)
+
+        response = self.client.get(self.list_url, {"page_size": 500})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 106)
+        self.assertEqual(len(response.data["results"]), 100)
+
+    def test_assignment_list_exposes_search_and_filter_controls_in_browsable_api(self):
+        self.client.force_authenticate(self.teacher)
+
+        response = self.client.get(self.list_url, HTTP_ACCEPT="text/html")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, 'name="search"')
+        self.assertContains(response, 'name="published"')
 
     def test_student_cannot_create_or_edit_assignments(self):
         self.client.force_authenticate(self.student)
@@ -170,7 +275,7 @@ class AsignaturaApiTests(TestCase):
         )
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(list_response.data), 1)
+        self.assertEqual(len(list_response.data["results"]), 1)
         self.assertEqual(update_response.status_code, status.HTTP_200_OK)
 
     def test_professor_can_delete_own_assignment(self):

@@ -88,7 +88,11 @@ Profesores y profesores de área pueden gestionar sus propias asignaturas; el
 rol `admin` puede gestionar todas. Los alumnos solo ven asignaturas publicadas
 en las que están inscritos. La API ofrece el CRUD en
 `/api/asignaturas/` y la interfaz navegable de DRF permite probarlo tras iniciar
-sesión.
+sesión. El listado permite buscar por título o descripción con `?search=texto`,
+filtrar el estado con `?published=true` o `?published=false`, ordenar por título
+o fecha con `?ordering=title` o `?ordering=-created_at`, y paginar con
+`?page=2&page_size=10`. La página predeterminada contiene 10 resultados y el
+tamaño solicitado se limita a 100.
 
 ## Unidades
 

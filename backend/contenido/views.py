@@ -1,12 +1,15 @@
 """Vistas de la API para las asignaturas."""
 
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.viewsets import ModelViewSet
 
 from usuarios.models import User
 
 from .models import Asignatura, Unidad
+from .pagination import AsignaturaPagination
 from .permissions import CanManageOwnedAssignment, CanManageOwnedUnit
 from .serializers import AsignaturaSerializer, UnidadSerializer
 
@@ -16,6 +19,12 @@ class AsignaturaViewSet(ModelViewSet):
 
     serializer_class = AsignaturaSerializer
     permission_classes = (CanManageOwnedAssignment,)
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filterset_fields = ("published",)
+    search_fields = ("title", "description")
+    ordering_fields = ("title", "created_at", "updated_at")
+    ordering = ("title",)
+    pagination_class = AsignaturaPagination
 
     def get_queryset(self):
         user = self.request.user
