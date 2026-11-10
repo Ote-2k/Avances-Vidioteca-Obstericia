@@ -82,17 +82,18 @@ Las clases `IsProfessorOrAreaTeacher` e `IsApplicationAdmin` de
 de la API. El rol `admin` tiene acceso a endpoints de la API que acepten estas
 clases; el acceso al panel Django Admin sigue dependiendo de `is_staff`.
 Profesores y profesores de área comparten el permiso para operaciones de
-contenido. Cuando se implementen esos endpoints, también deberán comprobar que
-cada profesor modifique únicamente contenido propio. El rol alumno no recibe
-permiso de edición.
+contenido, limitado a sus propias asignaturas. Los alumnos no reciben permiso
+para modificar asignaturas ni unidades.
 
 ## Asignaturas
 
 Las asignaturas tienen un profesor propietario, título, descripción, URL
 opcional de portada, estado de publicación y una lista de alumnos inscritos.
-Profesores y profesores de área pueden gestionar sus propias asignaturas; el
-rol `admin` puede gestionar todas. Los alumnos solo ven asignaturas publicadas
-en las que están inscritos. La API ofrece el CRUD en
+Los profesores de área pueden crear y gestionar sus propias asignaturas; el
+rol `admin` puede gestionar todas. Los profesores pueden consultar las
+asignaturas que tienen asignadas, pero no crearlas, editarlas ni eliminarlas.
+Los alumnos solo ven asignaturas publicadas en las que están inscritos. La API
+ofrece el CRUD en
 `/api/asignaturas/` y la interfaz navegable de DRF permite probarlo tras iniciar
 sesión. El listado permite buscar por título o descripción con `?search=texto`,
 filtrar el estado con `?published=true` o `?published=false`, ordenar por título
@@ -109,3 +110,34 @@ Profesores y profesores de área solo pueden gestionar unidades de sus
 asignaturas. Los alumnos inscritos pueden consultarlas cuando la asignatura
 está publicada. La asignatura asociada se toma de la ruta para impedir mover una
 unidad a otra asignatura modificando la solicitud.
+
+## Recursos, documentos y comentarios
+
+La app `recursos` relaciona cada recurso con una unidad y con el usuario que lo
+creó. Conserva los campos de visibilidad, borrador y tramo de reproducción del
+frontend. El video puede ser un archivo local o una URL externa. El archivo
+local se guarda bajo `media/videos/`; la base de datos conserva su ruta.
+
+Cada recurso puede tener documentos/materiales adjuntos como archivos locales
+o enlaces externos, y comentarios con respuestas. En desarrollo, Django guarda
+los archivos bajo `media/`; el proyecto sirve esas rutas localmente con `DEBUG=True`, solo para
+desarrollo. Esa carpeta no se incluye en Git. Antes de producción se debe
+configurar almacenamiento persistente y acceso a los archivos apropiado para el
+despliegue.
+
+La API registra estos endpoints en el API Root:
+
+- `/api/recursos/`: profesores y profesores de área pueden crear y gestionar
+  recursos de sus propias asignaturas; el rol `admin` puede gestionar todos.
+  Los alumnos inscritos solo consultan recursos de asignaturas publicadas que
+  no estén ocultos ni en borrador.
+- `/api/documentos/`: gestión de archivos y enlaces de apoyo asociados a un
+  recurso accesible; la edición corresponde al profesor propietario o al rol
+  `admin`.
+- `/api/comentarios/`: usuarios autenticados pueden comentar o responder en
+  recursos accesibles. Cada usuario puede editar o eliminar sus comentarios;
+  el profesor propietario y `admin` también pueden moderarlos.
+
+Los archivos de video y documentos se envían como `multipart/form-data`. Un
+recurso o documento admite un archivo local o una URL externa, pero no ambos a
+la vez. Las respuestas a comentarios deben pertenecer al mismo recurso.
