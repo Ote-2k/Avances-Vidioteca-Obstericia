@@ -1,9 +1,12 @@
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import FieldDoesNotExist
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIRequestFactory
 
 from .models import User
+from .permissions import IsApplicationAdmin, IsProfessorOrAreaTeacher
 
 
 class UserManagerTests(TestCase):
@@ -149,3 +152,36 @@ class UserProfileApiTests(TestCase):
         response = self.client.get(reverse("rest_framework:login"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class RolePermissionTests(TestCase):
+    def setUp(self):
+        self.request_factory = APIRequestFactory()
+        self.view = object()
+
+    def check_permission(self, permission_class, role=None):
+        request = self.request_factory.get("/")
+        if role is not None:
+            request.user = User(role=role, is_active=True)
+        else:
+            request.user = AnonymousUser()
+
+        return permission_class().has_permission(request, self.view)
+
+    def test_professors_and_area_teachers_can_edit_content(self):
+        for role in (User.Role.PROFESOR, User.Role.PROFESOR_AREA, User.Role.ADMIN):
+            with self.subTest(role=role):
+                self.assertTrue(self.check_permission(IsProfessorOrAreaTeacher, role))
+
+    def test_students_cannot_edit_content(self):
+        self.assertFalse(self.check_permission(IsProfessorOrAreaTeacher, User.Role.ALUMNO))
+
+    def test_only_application_admin_has_admin_role_permission(self):
+        self.assertTrue(self.check_permission(IsApplicationAdmin, User.Role.ADMIN))
+        for role in (User.Role.ALUMNO, User.Role.PROFESOR, User.Role.PROFESOR_AREA):
+            with self.subTest(role=role):
+                self.assertFalse(self.check_permission(IsApplicationAdmin, role))
+
+    def test_anonymous_user_has_no_role_permissions(self):
+        self.assertFalse(self.check_permission(IsProfessorOrAreaTeacher))
+        self.assertFalse(self.check_permission(IsApplicationAdmin))

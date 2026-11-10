@@ -68,3 +68,14 @@ sesión. Luego visita `http://127.0.0.1:8000/api/usuarios/me/` para ver el perfi
 de la cuenta autenticada. Las solicitudes anónimas no pueden consultar ese
 endpoint. La respuesta incluye el correo, nombre, apellido y rol; no expone la
 contraseña ni los permisos internos de Django.
+
+## Permisos por rol
+
+Las clases `IsProfessorOrAreaTeacher` e `IsApplicationAdmin` de
+`usuarios.permissions` permiten reutilizar los roles al proteger futuras vistas
+de la API. El rol `admin` tiene acceso a endpoints de la API que acepten estas
+clases; el acceso al panel Django Admin sigue dependiendo de `is_staff`.
+Profesores y profesores de área comparten el permiso para operaciones de
+contenido. Cuando se implementen esos endpoints, también deberán comprobar que
+cada profesor modifique únicamente contenido propio. El rol alumno no recibe
+permiso de edición.
