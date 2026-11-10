@@ -109,3 +109,17 @@ Profesores y profesores de área solo pueden gestionar unidades de sus
 asignaturas. Los alumnos inscritos pueden consultarlas cuando la asignatura
 está publicada. La asignatura asociada se toma de la ruta para impedir mover una
 unidad a otra asignatura modificando la solicitud.
+
+## Recursos, documentos y comentarios
+
+La app `recursos` relaciona cada recurso con una unidad y con el usuario que lo
+creó. Conserva los campos de visibilidad, borrador y tramo de reproducción del
+frontend. El video puede ser un archivo local o una URL externa. El archivo
+local se guarda bajo `media/videos/`; la base de datos conserva su ruta.
+
+Cada recurso puede tener documentos/materiales adjuntos como archivos locales
+o enlaces externos, y comentarios con respuestas. En desarrollo, Django guarda
+los archivos bajo `media/`; el proyecto sirve esas rutas localmente con `DEBUG=True`, solo para
+desarrollo. Esa carpeta no se incluye en Git. Antes de producción se debe
+configurar almacenamiento persistente y acceso a los archivos apropiado para el
+despliegue.
