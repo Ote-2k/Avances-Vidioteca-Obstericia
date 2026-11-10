@@ -79,3 +79,13 @@ Profesores y profesores de área comparten el permiso para operaciones de
 contenido. Cuando se implementen esos endpoints, también deberán comprobar que
 cada profesor modifique únicamente contenido propio. El rol alumno no recibe
 permiso de edición.
+
+## Asignaturas
+
+Las asignaturas tienen un profesor propietario, título, descripción, URL
+opcional de portada, estado de publicación y una lista de alumnos inscritos.
+Profesores y profesores de área pueden gestionar sus propias asignaturas; el
+rol `admin` puede gestionar todas. Los alumnos solo ven asignaturas publicadas
+en las que están inscritos. La API ofrece el CRUD en
+`/api/asignaturas/` y la interfaz navegable de DRF permite probarlo tras iniciar
+sesión.
