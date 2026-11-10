@@ -14,3 +14,29 @@ node_modules/
 # Archivos de entorno y logs
 .env
 *.log
+
+# entornos virtuales (no vaya a ser)
+venv/
+env/
+ENV/
+.venv/
+
+# Archivos compilados y caché de Python (gemini me tuvo que decir como agregar este)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# base de datos local
+*.sqlite3
+
+# config del entorno
+.env
+
+# Archivos generados por el editor de código (con este tambien)
+.vscode/
+.idea/
+*.swp
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
