@@ -82,9 +82,8 @@ Las clases `IsProfessorOrAreaTeacher` e `IsApplicationAdmin` de
 de la API. El rol `admin` tiene acceso a endpoints de la API que acepten estas
 clases; el acceso al panel Django Admin sigue dependiendo de `is_staff`.
 Profesores y profesores de área comparten el permiso para operaciones de
-contenido. Cuando se implementen esos endpoints, también deberán comprobar que
-cada profesor modifique únicamente contenido propio. El rol alumno no recibe
-permiso de edición.
+contenido, limitado a sus propias asignaturas. Los alumnos no reciben permiso
+para modificar asignaturas ni unidades.
 
 ## Asignaturas
 
@@ -123,3 +122,20 @@ los archivos bajo `media/`; el proyecto sirve esas rutas localmente con `DEBUG=T
 desarrollo. Esa carpeta no se incluye en Git. Antes de producción se debe
 configurar almacenamiento persistente y acceso a los archivos apropiado para el
 despliegue.
+
+La API registra estos endpoints en el API Root:
+
+- `/api/recursos/`: profesores y profesores de área pueden crear y gestionar
+  recursos de sus propias asignaturas; el rol `admin` puede gestionar todos.
+  Los alumnos inscritos solo consultan recursos de asignaturas publicadas que
+  no estén ocultos ni en borrador.
+- `/api/documentos/`: gestión de archivos y enlaces de apoyo asociados a un
+  recurso accesible; la edición corresponde al profesor propietario o al rol
+  `admin`.
+- `/api/comentarios/`: usuarios autenticados pueden comentar o responder en
+  recursos accesibles. Cada usuario puede editar o eliminar sus comentarios;
+  el profesor propietario y `admin` también pueden moderarlos.
+
+Los archivos de video y documentos se envían como `multipart/form-data`. Un
+recurso o documento admite un archivo local o una URL externa, pero no ambos a
+la vez. Las respuestas a comentarios deben pertenecer al mismo recurso.
