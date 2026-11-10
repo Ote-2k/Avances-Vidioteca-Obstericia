@@ -12,7 +12,6 @@ const firebaseConfig = {
 	apiKey: "AIzaSyAW8zEFVvceBMokRDyMMP53uEyyhQrEPAg",
 	authDomain: "videoteca-obstetricia.firebaseapp.com",
 	projectId: "videoteca-obstetricia",
-	storageBucket: "videoteca-obstetricia.firebasestorage.app",
 	messagingSenderId: "904184784737",
 	appId: "1:904184784737:web:7f458d048a514e357c0720",
 	measurementId: "G-4L1RW8RT4H"

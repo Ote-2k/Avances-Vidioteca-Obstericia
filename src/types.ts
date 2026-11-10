@@ -19,9 +19,9 @@ export interface CourseSummary {
 	title: string;
 	description?: string;
 	coverUrl?: string;
+	coverLocalKey?: string;
 	ownerUid?: string;
 	published?: boolean;
-	estudiantesInscritos?: string[];
 }
 
 export interface CourseUnit {
@@ -54,6 +54,7 @@ export interface ResourceMaterial {
 	description?: string;
 	url?: string;
 	localKey?: string;
+	pdfPage?: number;
 }
 
 export interface ResourcePopup {
@@ -61,7 +62,7 @@ export interface ResourcePopup {
 	title: string;
 	message: string;
 	timestamp: number;
-	materialId: string;
+	materialId?: string;
 	pauseVideo: boolean;
 	dismissAfter: number | null;
 	x: number;

@@ -11,6 +11,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import universityLogoWhite from "../../LOGO INSTITUCIONAL/SVG/UCEN LOGO_UCEN2_LOGO_BLANCO.svg";
 
 /**
  * Layout compartido para pantallas de autenticación.
@@ -21,7 +22,7 @@ function AccessLayout({ title, subtitle, children }: React.PropsWithChildren<{ t
 	return (
 		<main className="access-layout">
 			<section className="access-visual">
-				<img src="/LOGO%20INSTITUCIONAL/SVG/UCEN%20LOGO_UCEN_ISO_BLANCO.svg" alt="Universidad Central" />
+				<img src={universityLogoWhite} alt="Universidad Central de Chile" />
 				<p>Obstetricia y Puericultura<br />Facultad de Medicina y Ciencias de la Salud</p>
 			</section>
 			<section className="access-panel">

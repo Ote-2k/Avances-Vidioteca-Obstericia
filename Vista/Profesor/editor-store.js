@@ -3,8 +3,6 @@ import { signOut } from "firebase/auth";
 import { deleteObject, ref } from "firebase/storage";
 import {
 	addDoc,
-	arrayRemove,
-	arrayUnion,
 	collection,
 	deleteDoc,
 	doc,
@@ -184,13 +182,9 @@ window.VideotecaStoreReady = (async () => {
 			const assignmentSnapshot = await getDoc(assignmentRef);
 			if (assignmentSnapshot.exists()) {
 				const saved = assignmentSnapshot.data();
-				if (currentRole === "alumno" && !saved.published) {
-					window.location.href = "../../index.html";
-					return;
-				}
 				const resourcesRef = collection(assignmentRef, "recursos");
 				const resourcesQuery = currentRole === "alumno"
-					? query(resourcesRef, where("isHidden", "==", false))
+					? query(resourcesRef, where("isHidden", "==", false), where("isDraft", "==", false))
 					: resourcesRef;
 				const resourcesSnapshot = await getDocs(resourcesQuery);
 				data = {
@@ -292,9 +286,8 @@ window.VideotecaStoreReady = (async () => {
 		async getAssignments() {
 			if (!cloudReady) return [];
 			try {
-				// Los filtros coinciden con los permisos de consulta de firestore.rules.
 				const assignmentsQuery = currentRole === "alumno"
-					? query(collection(db, "asignaturas"), where("published", "==", true))
+					? collection(db, "asignaturas")
 					: query(collection(db, "asignaturas"), where("ownerUid", "==", auth.currentUser.uid));
 				const assignments = await getDocs(assignmentsQuery);
 				return assignments.docs.map((item) => ({ id: item.id, ...(item.data().course || {}) }));
@@ -307,8 +300,8 @@ window.VideotecaStoreReady = (async () => {
 			if (currentRole !== "alumno") throw new Error("Solo los alumnos pueden consultar esta vista.");
 			const target = doc(db, "asignaturas", id);
 			const snapshot = await getDoc(target);
-			if (!snapshot.exists() || snapshot.data().published !== true) return null;
-			const resourcesSnapshot = await getDocs(query(collection(target, "recursos"), where("isHidden", "==", false)));
+			if (!snapshot.exists()) return null;
+			const resourcesSnapshot = await getDocs(query(collection(target, "recursos"), where("isHidden", "==", false), where("isDraft", "==", false)));
 			const saved = snapshot.data();
 			return normalizeData({
 				course: { ...defaults.course, ...(saved.course || {}) },
@@ -361,24 +354,6 @@ window.VideotecaStoreReady = (async () => {
 				console.warn("No se pudieron limpiar los videos locales de la asignatura.", error);
 			});
 			return true;
-		},
-
-		// Agregar alumno a la asignatura
-		async addStudentToAssignment(studentEmail) {
-			const assignmentId = this.getAssignmentId();
-			const assignmentRef = doc(db, "asignaturas", assignmentId);
-			await updateDoc(assignmentRef, {
-				estudiantesInscritos: arrayUnion(studentEmail.toLowerCase())
-			});
-		},
-
-		// Remover alumno de la asignatura
-		async removeStudentFromAssignment(studentEmail) {
-			const assignmentId = this.getAssignmentId();
-			const assignmentRef = doc(db, "asignaturas", assignmentId);
-			await updateDoc(assignmentRef, {
-				estudiantesInscritos: arrayRemove(studentEmail.toLowerCase())
-			});
 		},
 
 		// Crear notificación en Firestore

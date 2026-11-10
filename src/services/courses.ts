@@ -10,6 +10,7 @@ import {
 	arrayUnion,
 	collection,
 	deleteDoc,
+	deleteField,
 	doc,
 	getDoc,
 	getDocs,
@@ -54,15 +55,12 @@ function normalizeResource(id: string, data: Record<string, unknown>): ResourceS
 }
 
 /**
- * Devuelve la lista de asignaturas visibles para el rol actual.
- * Los alumnos solo reciben asignaturas publicadas y matriculadas.
+ * Devuelve las asignaturas del profesor o todas las asignaturas para alumnos.
  */
-export async function listAssignments(role: UserRole, uid: string, email = ""): Promise<CourseSummary[]> {
-	const normalizedEmail = email.trim().toLowerCase();
-	if (role === "alumno" && !normalizedEmail) return [];
-	const assignmentsQuery = role === "alumno"
-		? query(assignments, where("published", "==", true), where("estudiantesInscritos", "array-contains", normalizedEmail))
-		: query(assignments, where("ownerUid", "==", uid));
+export async function listAssignments(role: UserRole, uid: string): Promise<CourseSummary[]> {
+	const assignmentsQuery = role === "profesor"
+		? query(assignments, where("ownerUid", "==", uid))
+		: assignments;
 	const snapshot = await getDocs(assignmentsQuery);
 	return snapshot.docs.map((item) => {
 		const data = item.data();
@@ -71,40 +69,37 @@ export async function listAssignments(role: UserRole, uid: string, email = ""): 
 			title: String(data.course?.title || "Asignatura sin nombre"),
 			description: String(data.course?.description || ""),
 			coverUrl: String(data.course?.coverUrl || ""),
+			coverLocalKey: typeof data.course?.coverLocalKey === "string" ? data.course.coverLocalKey : undefined,
 			ownerUid: data.ownerUid,
-			published: data.published === true,
-			estudiantesInscritos: Array.isArray(data.estudiantesInscritos) ? data.estudiantesInscritos : undefined
+			published: data.published === true
 		};
-	}).filter((assignment) => role !== "alumno"
-		|| assignment.estudiantesInscritos?.some((studentEmail) => studentEmail.toLowerCase() === normalizedEmail));
+	});
 }
 
 /**
  * Carga una asignatura completa con sus recursos, unidades y comentarios.
  */
-export async function getCourse(assignmentId: string, role: UserRole, email = ""): Promise<CourseView | null> {
+export async function getCourse(assignmentId: string, role: UserRole): Promise<CourseView | null> {
 	const assignmentRef = doc(db, "asignaturas", assignmentId);
 	const snapshot = await getDoc(assignmentRef);
 	if (!snapshot.exists()) return null;
 	const saved = snapshot.data();
-	const enrolledEmails = Array.isArray(saved.estudiantesInscritos) ? saved.estudiantesInscritos as string[] : [];
-	if (role === "alumno" && (saved.published !== true || !enrolledEmails.some((studentEmail) => studentEmail.toLowerCase() === email.trim().toLowerCase()))) return null;
 	const resourceCollection = collection(assignmentRef, "recursos");
 	const resourceSnapshot = await getDocs(role === "alumno"
-		? query(resourceCollection, where("isHidden", "==", false))
+		? query(resourceCollection, where("isHidden", "==", false), where("isDraft", "==", false))
 		: resourceCollection);
 	const units = Array.isArray(saved.course?.units) ? saved.course.units as CourseUnit[] : [{ id: "unidad-principal", name: "Unidad principal" }];
 	const resources = resourceSnapshot.docs
 		.map((item) => normalizeResource(item.id, item.data()))
-		.filter((item) => role !== "alumno" || (!item.isHidden && !item.isDraft));
+		.filter((item) => role !== "alumno" || (!item.isHidden && !item.isDraft && Boolean(item.videoLocalKey || item.videoUrl)));
 	return {
 		id: snapshot.id,
 		title: String(saved.course?.title || "Asignatura sin nombre"),
 		description: String(saved.course?.description || ""),
 		coverUrl: String(saved.course?.coverUrl || ""),
+		coverLocalKey: typeof saved.course?.coverLocalKey === "string" ? saved.course.coverLocalKey : undefined,
 		ownerUid: saved.ownerUid,
 		published: saved.published === true,
-		estudiantesInscritos: enrolledEmails,
 		units,
 		comments: Array.isArray(saved.comments?.course) ? saved.comments.course as CourseComment[] : [],
 		resources
@@ -114,9 +109,9 @@ export async function getCourse(assignmentId: string, role: UserRole, email = ""
 /**
  * Crea una nueva asignatura con estructura base para unidades y comentarios.
  */
-export async function createAssignment(title: string, uid: string): Promise<string> {
+export async function createAssignment(title: string, uid: string, coverLocalKey: string): Promise<string> {
 	const created = await addDoc(assignments, {
-		course: { title, description: "", coverUrl: "", units: [{ id: "unidad-principal", name: "Unidad principal" }] },
+		course: { title, description: "", coverLocalKey, units: [{ id: "unidad-principal", name: "Unidad principal" }] },
 		comments: { course: [] },
 		ownerUid: uid,
 		published: true,
@@ -126,31 +121,39 @@ export async function createAssignment(title: string, uid: string): Promise<stri
 }
 
 /**
- * Renombra una asignatura existente.
+ * Actualiza el nombre de una asignatura y, opcionalmente, su miniatura local.
  */
-export async function renameAssignment(id: string, title: string): Promise<void> {
-	await updateDoc(doc(db, "asignaturas", id), { "course.title": title, updatedAt: serverTimestamp() });
+export async function updateAssignmentDetails(assignmentId: string, title: string, coverLocalKey?: string): Promise<void> {
+	const changes: Record<string, unknown> = {
+		"course.title": title,
+		updatedAt: serverTimestamp()
+	};
+	if (coverLocalKey) {
+		changes["course.coverLocalKey"] = coverLocalKey;
+		changes["course.coverUrl"] = deleteField();
+	}
+	await updateDoc(doc(db, "asignaturas", assignmentId), changes);
 }
 
 /**
- * Elimina completamente una asignatura y todos sus recursos hijos.
+ * Elimina primero los recursos y luego la asignatura para no dejar documentos huérfanos.
  */
-export async function deleteAssignment(id: string): Promise<void> {
-	const resourceSnapshot = await getDocs(collection(db, "asignaturas", id, "recursos"));
-	for (let offset = 0; offset < resourceSnapshot.docs.length; offset += 450) {
+export async function deleteAssignment(assignmentId: string): Promise<void> {
+	const resourceSnapshot = await getDocs(collection(db, "asignaturas", assignmentId, "recursos"));
+	for (let start = 0; start < resourceSnapshot.docs.length; start += 500) {
 		const batch = writeBatch(db);
-		resourceSnapshot.docs.slice(offset, offset + 450).forEach((resource) => batch.delete(resource.ref));
+		resourceSnapshot.docs.slice(start, start + 500).forEach((resource) => batch.delete(resource.ref));
 		await batch.commit();
 	}
-	await deleteDoc(doc(db, "asignaturas", id));
+	await deleteDoc(doc(db, "asignaturas", assignmentId));
 }
 
 /**
- * Crea un recurso vacío dentro de una unidad específica para que luego se complete.
+ * Crea un borrador vacío para que el profesor complete sus datos en el editor.
  */
-export async function createResource(assignmentId: string, unit: CourseUnit, title: string): Promise<string> {
+export async function createResource(assignmentId: string, unit: CourseUnit): Promise<string> {
 	const created = await addDoc(collection(db, "asignaturas", assignmentId, "recursos"), {
-		title,
+		title: "",
 		description: "",
 		unitId: unit.id,
 		unit: unit.name,
@@ -171,7 +174,7 @@ export async function getResource(assignmentId: string, resourceId: string, role
 	const snapshot = await getDoc(resourceRef);
 	if (!snapshot.exists()) return null;
 	const resource = normalizeResource(snapshot.id, snapshot.data());
-	if (role === "alumno" && (resource.isHidden || resource.isDraft)) return null;
+	if (role === "alumno" && (resource.isHidden || resource.isDraft || (!resource.videoLocalKey && !resource.videoUrl))) return null;
 	return resource;
 }
 
@@ -205,14 +208,7 @@ export async function getResourceComments(assignmentId: string, resourceId: stri
 	return Array.isArray(comments) ? comments as CourseComment[] : [];
 }
 
-export async function updateCourse(assignmentId: string, changes: { title?: string; description?: string; units?: CourseUnit[] }): Promise<void> {
+export async function updateCourse(assignmentId: string, changes: { units: CourseUnit[] }): Promise<void> {
 	const updates = Object.fromEntries(Object.entries(changes).map(([key, value]) => [`course.${key}`, value]));
 	await updateDoc(doc(db, "asignaturas", assignmentId), { ...updates, updatedAt: serverTimestamp() });
-}
-
-export async function updateCourseStudents(assignmentId: string, emails: string[]): Promise<void> {
-	await updateDoc(doc(db, "asignaturas", assignmentId), {
-		estudiantesInscritos: [...new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean))],
-		updatedAt: serverTimestamp()
-	});
 }

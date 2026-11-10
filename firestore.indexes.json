@@ -1,13 +1,4 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "asignaturas",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "published", "order": "ASCENDING" },
-        { "fieldPath": "estudiantesInscritos", "arrayConfig": "CONTAINS" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

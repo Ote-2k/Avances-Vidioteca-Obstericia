@@ -349,18 +349,10 @@ onAuthStateChanged(auth, async (user) => {
 	}
 
 	try {
-		const userEmail = user.email.toLowerCase();
-		const allAssignments = await store.getAssignments();
-
-		assignments = allAssignments.filter((item) => {
-			if (!item.estudiantesInscritos || !Array.isArray(item.estudiantesInscritos)) {
-				return true;
-			}
-			return item.estudiantesInscritos.map((e) => e.toLowerCase()).includes(userEmail);
-		});
+		assignments = await store.getAssignments();
 
 		if (!assignments.length) {
-			status.textContent = "No tienes asignaturas inscritas o disponibles actualmente.";
+			status.textContent = "No hay asignaturas disponibles actualmente.";
 			courseTitle.textContent = "Sin Asignaturas";
 			courseContent.replaceChildren();
 			assignmentList.replaceChildren();

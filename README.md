@@ -13,7 +13,7 @@ Vite sirve la SPA durante el desarrollo y compila TypeScript/JSX para producció
 | `src/pages/AccessPages.tsx` | Inicio de sesión, recuperación de contraseña y registro. |
 | `src/pages/WorkspacePages.tsx` | Vistas de alumno, profesor, curso, recurso y administración. |
 | `src/services/courses.ts` | Consultas y mutaciones tipadas de Firestore. |
-| `src/services/videoFiles.ts` | Conversión FFmpeg y persistencia de videos en IndexedDB. |
+| `src/services/videoFiles.ts` | Miniaturas, transcodificación FFmpeg y persistencia de videos en IndexedDB. |
 | `src/firebase.ts` | Inicializa y exporta Authentication y Firestore. |
 | `firestore.rules` / `storage.rules` | Autorización aplicada por Firebase en el servidor. |
 | `src/styles.css` | Estilos responsive compartidos por las rutas React. |
@@ -28,7 +28,7 @@ Vite sirve la SPA durante el desarrollo y compila TypeScript/JSX para producció
 - **Firebase Authentication** autentica correo y contraseña y mantiene la sesión del usuario.
 - **Cloud Firestore** guarda perfiles de rol, asignaturas, unidades, recursos y comentarios.
 - **IndexedDB** conserva documentos adjuntos y videos en el navegador; no requiere Firebase Storage ni facturación.
-- **FFmpeg.wasm** ejecuta FFmpeg dentro de un Web Worker/WebAssembly descargado bajo demanda. El worker es código ejecutado por el navegador, no un proceso backend.
+- **FFmpeg.wasm** convierte los videos seleccionados a WebM en el navegador antes de guardarlos localmente.
 - **APIs del navegador** usadas directamente: DOM, `URLSearchParams`, IndexedDB, `File`, `URL.createObjectURL`, `<video>` y Canvas para generar miniaturas.
 
 La configuración de cliente de Firebase en `src/firebase.ts` incluye identificadores públicos necesarios para inicializar el SDK web; no contiene una cuenta de servicio ni una clave administrativa. Los permisos reales dependen de las reglas Firebase.
@@ -41,7 +41,6 @@ usuarios/{uid}
 
 asignaturas/{assignmentId}
 	ownerUid, published
-	estudiantesInscritos: [correos normalizados]
 	course: { title, description, coverUrl, units[] }
 	comments: { course: [], [resourceId]: [] }
 
@@ -59,7 +58,7 @@ El `uid` lo entrega Authentication. `ownerUid` relaciona la asignatura con el pr
 2. `auth.authStateReady()` espera a que Firebase restaure una sesión previa.
 3. La app lee `usuarios/{uid}` desde Firestore y obtiene `role`.
 4. El rol `profesor` dirige a `/profesor`; `alumno` dirige a `/alumno`; `admin` dirige a `/admin`. Un perfil sin rol válido no pasa las rutas protegidas.
-5. `AuthContext` conserva sesión y perfil para las vistas. Las reglas de Firestore vuelven a comprobar rol, publicación y propiedad antes de aceptar cada operación; ocultar un botón no es una medida de seguridad.
+5. `AuthContext` conserva sesión y perfil para las vistas. Las reglas de Firestore vuelven a comprobar rol, visibilidad y propiedad antes de aceptar cada operación; ocultar un botón no es una medida de seguridad.
 
 Los alumnos pueden crear su cuenta desde `/registro`; las reglas solo permiten que ese usuario cree su propio perfil con `role: alumno`. Profesores y administradores se crean desde Authentication y reciben su perfil/rol mediante Admin o configuración autorizada.
 
@@ -69,7 +68,7 @@ Los alumnos pueden crear su cuenta desde `/registro`; las reglas solo permiten q
 
 Las vistas React actualizan su estado con hooks y persisten operaciones mediante `src/services/courses.ts`. Los comentarios y respuestas se agregan con `arrayUnion` para evitar que dos envíos simultáneos sobrescriban el hilo.
 
-Las consultas se filtran por `ownerUid` para profesores. Para alumnos, se requiere `published == true` y que el correo autenticado esté en `estudiantesInscritos`; el profesor administra esa lista desde la asignatura. Las reglas Firestore aplican la misma matrícula al leer asignaturas y recursos, incluso al abrir una URL directamente. Los alumnos reciben solo recursos visibles; los borradores tampoco se muestran.
+Las consultas de profesores se filtran por `ownerUid`. Todos los alumnos pueden listar y abrir cualquier asignatura, sin matrícula ni requisito de publicación. Dentro de cada asignatura, solo pueden leer recursos que no estén marcados como ocultos ni como borradores, incluso al abrir una URL directamente.
 
 ## Comentarios
 
@@ -88,8 +87,8 @@ El formulario del recurso acepta archivos PDF, Office, texto, PNG y JPEG de hast
 ### Archivos cargados
 
 1. El input HTML entrega un `File`. Se intenta capturar una miniatura con un elemento `<video>` y Canvas.
-2. FFmpeg.wasm se carga al seleccionar un archivo y convierte a WebM usando VP8/Opus, en un hilo para reducir memoria. Se rechazan originales mayores a 250 MB y salidas mayores a 300 MB (este último límite se conservó del flujo anterior de Storage). IndexedDB puede rechazar el guardado si el navegador no tiene cuota suficiente.
-3. El WebM se guarda como `Blob` en IndexedDB, base `videoteca-local-videos`, almacén `videos`. La clave se forma como `{assignmentId}/{resourceId}`.
+2. Se rechazan archivos originales mayores a 250 MB. FFmpeg.wasm los convierte a WebM (VP8/Vorbis) y se rechazan resultados mayores a 300 MB; la interfaz muestra progreso durante la conversión. Si el navegador no puede decodificar el WebM para la miniatura, FFmpeg genera la imagen localmente.
+3. El WebM se guarda como `Blob` en la base `videoteca-local-videos`, almacén `videos`. El navegador puede rechazarlo si no tiene cuota suficiente.
 4. Firestore guarda `videoLocalKey` y el nombre, no los bytes del video. Al abrir el recurso, el navegador lee el `Blob`, genera una URL temporal con `URL.createObjectURL` y la asigna al reproductor.
 
 **Consecuencia:** un video nuevo solo está disponible en el mismo origen, navegador y perfil donde se cargó. No se sincroniza con los alumnos ni con otros equipos, y borrar los datos del sitio puede eliminarlo. Para compartir videos entre usuarios se requiere almacenamiento remoto (por ejemplo Firebase Storage con su facturación correspondiente) o una URL accesible con permisos adecuados.
@@ -136,4 +135,4 @@ Firebase Storage es opcional para los videos nuevos. Solo si se habilita el buck
 
 ## Resumen para la evaluación
 
-“Vite sirve una SPA React + TypeScript y React Router gestiona rutas protegidas por rol. Firebase Authentication valida la identidad; AuthContext carga el perfil desde Firestore y las reglas autorizan las lecturas/escrituras. Las vistas tipadas gestionan asignaturas, unidades, recursos y comentarios. Los videos se convierten en el cliente con FFmpeg WebAssembly y se guardan en IndexedDB local; por ello no se distribuyen automáticamente entre alumnos.”
+“Vite sirve una SPA React + TypeScript y React Router gestiona rutas protegidas por rol. Firebase Authentication valida la identidad; AuthContext carga el perfil desde Firestore y las reglas autorizan las lecturas/escrituras. Las vistas tipadas gestionan asignaturas, unidades, recursos y comentarios. Los videos se convierten a WebM en el cliente y se guardan en IndexedDB local; por ello no se distribuyen automáticamente entre alumnos.”

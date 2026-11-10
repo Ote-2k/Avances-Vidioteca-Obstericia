@@ -12,17 +12,13 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == role;
     }
 
+    function isTeacherUser(userId) {
+      return get(/databases/$(database)/documents/usuarios/$(userId)).data.role == 'profesor';
+    }
+
     function teacherOwns(assignmentId) {
       return roleIs('profesor')
         && get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data.ownerUid == request.auth.uid;
-    }
-
-    function studentCanRead(assignmentId) {
-      let assignment = get(/databases/$(database)/documents/asignaturas/$(assignmentId)).data;
-      return roleIs('alumno')
-        && request.auth.token.email is string
-        && assignment.published == true
-        && assignment.get('estudiantesInscritos', []).hasAny([request.auth.token.email.lower()]);
     }
 
     function onlyAppendedCourseComment() {
@@ -39,6 +35,32 @@ service cloud.firestore {
         && newThread[newThread.size() - 1].authorUid == request.auth.uid;
     }
 
+    function onlyUpdatedCourseUnits() {
+      let oldCourse = resource.data.get('course', {});
+      let newCourse = request.resource.data.get('course', {});
+      let changedCourseFields = newCourse.diff(oldCourse).affectedKeys();
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['course', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['course'])
+        && changedCourseFields.hasOnly(['units'])
+        && changedCourseFields.hasAny(['units'])
+        && newCourse.get('units', []) is list;
+    }
+
+    function onlyAdminUpdatedCourseDetails() {
+      let oldCourse = resource.data.get('course', {});
+      let newCourse = request.resource.data.get('course', {});
+      let changedCourseFields = newCourse.diff(oldCourse).affectedKeys();
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['course', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['course'])
+        && changedCourseFields.hasOnly(['title', 'coverLocalKey', 'coverUrl'])
+        && changedCourseFields.hasAny(['title', 'coverLocalKey', 'coverUrl'])
+        && newCourse.get('title', '') is string
+        && newCourse.get('title', '').size() > 0
+        && newCourse.get('title', '').size() <= 80
+        && (newCourse.get('coverLocalKey', null) == null || newCourse.get('coverLocalKey', null) is string)
+        && (newCourse.get('coverUrl', null) == null || newCourse.get('coverUrl', null) is string);
+    }
+
     function onlyAppendedResourceComment() {
       let oldThread = resource.data.get('comments', []);
       let newThread = request.resource.data.get('comments', []);
@@ -47,6 +69,29 @@ service cloud.firestore {
         && newThread is list
         && newThread.size() == oldThread.size() + 1
         && newThread[newThread.size() - 1].authorUid == request.auth.uid;
+    }
+
+    function resourceHasVideoAndThumbnail() {
+      let videoLocalKey = request.resource.data.get('videoLocalKey', null);
+      let videoUrl = request.resource.data.get('videoUrl', null);
+      let thumbnailUrl = request.resource.data.get('thumbnailUrl', null);
+      return thumbnailUrl is string
+        && thumbnailUrl.size() > 0
+        && ((videoLocalKey is string && videoLocalKey.size() > 0)
+          || (videoUrl is string && videoUrl.size() > 0));
+    }
+
+    function isNewResourceDraft() {
+      return request.resource.data.get('isDraft', false) == true
+        && request.resource.data.get('isHidden', false) == true
+        && request.resource.data.get('title', '') is string
+        && request.resource.data.get('description', '') is string;
+    }
+
+    function onlyResourceAttachmentsChanged() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+      return changedFields.size() > 0
+        && changedFields.hasOnly(['materials', 'popups', 'comments', 'updatedAt']);
     }
 
     match /usuarios/{userId} {
@@ -62,32 +107,41 @@ service cloud.firestore {
     }
 
     match /asignaturas/{assignmentId} {
-      // Los alumnos solo consultan asignaturas publicadas en las que están inscritos.
-      allow get: if (resource == null && roleIs('profesor'))
+      // Todos los alumnos pueden consultar las asignaturas creadas.
+      allow get: if roleIs('admin')
+        || (resource == null && roleIs('profesor'))
         || (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
-        || studentCanRead(assignmentId);
-      allow list: if (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
-        || (roleIs('alumno')
-          && request.auth.token.email is string
-          && resource.data.published == true
-          && resource.data.get('estudiantesInscritos', []).hasAny([request.auth.token.email.lower()]));
-      allow create: if roleIs('profesor')
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.published is bool;
-      allow update: if roleIs('profesor')
+        || roleIs('alumno');
+      allow list: if roleIs('admin')
+        || (roleIs('profesor') && resource.data.ownerUid == request.auth.uid)
+        || roleIs('alumno');
+      allow create: if roleIs('admin')
+          && request.resource.data.ownerUid is string
+          && isTeacherUser(request.resource.data.ownerUid)
+          && (request.resource.data.course.get('coverLocalKey', null) is string
+            || request.resource.data.course.get('coverUrl', null) is string)
+          && request.resource.data.published is bool;
+      allow update: if (roleIs('profesor')
           && resource.data.ownerUid == request.auth.uid
-          && request.resource.data.ownerUid == resource.data.ownerUid
-        || (roleIs('alumno') && resource.data.published == true && onlyAppendedCourseComment());
-      allow delete: if roleIs('profesor') && resource.data.ownerUid == request.auth.uid;
+          && (onlyUpdatedCourseUnits() || onlyAppendedCourseComment()))
+        || (roleIs('admin') && onlyAdminUpdatedCourseDetails())
+        || (roleIs('alumno') && onlyAppendedCourseComment());
+      allow delete: if roleIs('admin');
 
       match /recursos/{resourceId} {
         // El alumno lee recursos visibles; solo el profesor propietario puede editarlos.
-        allow read: if teacherOwns(assignmentId)
-          || (studentCanRead(assignmentId) && resource.data.isHidden == false);
-        allow create, delete: if teacherOwns(assignmentId);
-        allow update: if teacherOwns(assignmentId)
-          || (studentCanRead(assignmentId)
-            && resource.data.isHidden == false
+        allow read: if roleIs('admin')
+          || teacherOwns(assignmentId)
+          || (roleIs('alumno')
+            && resource.data.get('isHidden', false) == false
+            && resource.data.get('isDraft', false) == false);
+        allow create: if teacherOwns(assignmentId) && (resourceHasVideoAndThumbnail() || isNewResourceDraft());
+        allow delete: if teacherOwns(assignmentId) || roleIs('admin');
+        allow update: if (teacherOwns(assignmentId)
+            && (resourceHasVideoAndThumbnail() || onlyResourceAttachmentsChanged()))
+          || (roleIs('alumno')
+            && resource.data.get('isHidden', false) == false
+            && resource.data.get('isDraft', false) == false
             && onlyAppendedResourceComment());
       }
     }

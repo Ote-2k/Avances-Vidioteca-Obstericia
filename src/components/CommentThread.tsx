@@ -11,6 +11,7 @@ interface CommentThreadProps {
 	comments: CourseComment[];
 	profile: UserProfile;
 	onReply: (parentId: string, text: string) => Promise<void>;
+	allowReplies?: boolean;
 }
 
 /**
@@ -35,7 +36,7 @@ function formatDate(value: string): string {
 /**
  * Renderiza el bloque de comentarios con soporte para respuestas anidadas.
  */
-export function CommentThread({ comments, profile, onReply }: CommentThreadProps) {
+export function CommentThread({ comments, profile, onReply, allowReplies = true }: CommentThreadProps) {
 	const [replyTo, setReplyTo] = useState("");
 	const [replyText, setReplyText] = useState("");
 	const [replyError, setReplyError] = useState("");
@@ -68,8 +69,10 @@ export function CommentThread({ comments, profile, onReply }: CommentThreadProps
 				<header><strong>{displayAuthor(comment, profile)}</strong><time>{formatDate(comment.createdAt)}</time></header>
 				<p>{comment.text}</p>
 				{replies.length > 0 && <div className="comment-replies">{replies.map((reply) => <article className="comment-reply" key={reply.id}><header><strong>{displayAuthor(reply, profile)}</strong><time>{formatDate(reply.createdAt)}</time></header><p>{reply.text}</p></article>)}</div>}
-				<button className="text-button" type="button" onClick={() => { setReplyTo(replyTo === comment.id ? "" : comment.id); setReplyText(""); }}>{replyTo === comment.id ? "Cancelar" : "Responder"}</button>
-				{replyTo === comment.id && <form className="inline-form reply-form" onSubmit={(event) => void submitReply(event, comment.id)}><input aria-label={`Responder a ${displayAuthor(comment, profile)}`} placeholder="Escribe una respuesta" value={replyText} onChange={(event) => setReplyText(event.target.value)} required /><button className="button button-primary" disabled={busy}>{busy ? "Enviando..." : "Enviar respuesta"}</button>{replyError && <p className="status" role="status">{replyError}</p>}</form>}
+				{allowReplies && <>
+					<button className="text-button" type="button" onClick={() => { setReplyTo(replyTo === comment.id ? "" : comment.id); setReplyText(""); }}>{replyTo === comment.id ? "Cancelar" : "Responder"}</button>
+					{replyTo === comment.id && <form className="inline-form reply-form" onSubmit={(event) => void submitReply(event, comment.id)}><input aria-label={`Responder a ${displayAuthor(comment, profile)}`} placeholder="Escribe una respuesta" value={replyText} onChange={(event) => setReplyText(event.target.value)} required /><button className="button button-primary" disabled={busy}>{busy ? "Enviando..." : "Enviar respuesta"}</button>{replyError && <p className="status" role="status">{replyError}</p>}</form>}
+				</>}
 			</article>;
 		})}
 	</div>;

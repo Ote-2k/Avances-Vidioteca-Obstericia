@@ -3,10 +3,6 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Estas reglas cubren videos antiguos de Storage; los nuevos se guardan en IndexedDB.
-    function assignment(assignmentId) {
-      return firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)).data;
-    }
-
     function teacherOwns(assignmentId) {
       return request.auth != null
         && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'profesor'
@@ -15,13 +11,23 @@ service firebase.storage {
 
     function studentCanRead(assignmentId) {
       return request.auth != null
-        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'alumno'
-        && assignment(assignmentId).published == true;
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'alumno';
     }
 
     function studentCanReadResource(assignmentId, resourceId) {
       return studentCanRead(assignmentId)
-        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)/recursos/$(resourceId)).data.isHidden == false;
+        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)/recursos/$(resourceId)).data.get('isHidden', false) == false
+        && firestore.get(/databases/(default)/documents/asignaturas/$(assignmentId)/recursos/$(resourceId)).data.get('isDraft', false) == false;
+    }
+
+    match /course-covers/{coverId}/{fileName} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'admin'
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if request.auth != null
+        && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /videos/{assignmentId}/{resourceId}/{fileName} {

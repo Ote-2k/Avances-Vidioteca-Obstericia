@@ -789,24 +789,6 @@ await window.VideotecaStoreReady;
 		window.history.replaceState(null, "", `recurso.html?asignatura=${encodeURIComponent(window.VideotecaStore.getAssignmentId())}&recurso=${encodeURIComponent(resourceId)}`);
 		setEditing(false);
 		resourceSaveStatus.textContent = "Recurso creado. Ya aparece en la asignatura.";
-		
-		// DISPARADOR DE NOTIFICACIÓN A ALUMNOS INSCRITOS
-		try {
-			const currentCourse = window.VideotecaStore.get().course;
-			const enrolled = currentCourse.estudiantesInscritos || [];
-			const resourceTitleText = resourceTitle.textContent.trim();
-
-			enrolled.forEach((studentEmail) => {
-				window.VideotecaStore.sendNotification({
-					usuarioUid: studentEmail, // Si se busca vincular por correo/UID
-					titulo: "Nueva clase disponible",
-					mensaje: `Se ha publicado "${resourceTitleText}" en la asignatura ${currentCourse.title}.`,
-					link: `index.html?asignatura=${window.VideotecaStore.getAssignmentId()}`
-				});
-			});
-		} catch (notifErr) {
-			console.error("Error al notificar nuevo recurso:", notifErr);
-		}
 	}
 
 	function setEditorAction(action) {
