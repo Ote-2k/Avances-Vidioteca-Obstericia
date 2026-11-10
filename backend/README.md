@@ -53,3 +53,18 @@ Para volver a SQLite en esa terminal:
 ```powershell
 $env:DB_ENGINE = "sqlite"
 ```
+
+## Inicio de sesión y perfil de usuario
+
+La API usa sesiones de Django para autenticar solicitudes desde la interfaz
+navegable de Django REST Framework. Primero crea una cuenta administradora:
+
+```powershell
+python manage.py createsuperuser
+```
+
+Inicia el servidor y abre `http://127.0.0.1:8000/api-auth/login/` para iniciar
+sesión. Luego visita `http://127.0.0.1:8000/api/usuarios/me/` para ver el perfil
+de la cuenta autenticada. Las solicitudes anónimas no pueden consultar ese
+endpoint. La respuesta incluye el correo, nombre, apellido y rol; no expone la
+contraseña ni los permisos internos de Django.

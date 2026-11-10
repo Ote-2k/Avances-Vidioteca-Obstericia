@@ -1,6 +1,7 @@
 from django.core.exceptions import FieldDoesNotExist
 from django.test import TestCase
 from django.urls import reverse
+from rest_framework import status
 
 from .models import User
 
@@ -98,3 +99,53 @@ class UserAdminTests(TestCase):
         self.assertEqual(user.role, User.Role.PROFESOR_AREA)
         self.assertTrue(user.check_password("Clave-segura-123"))
         self.assertFalse(user.is_staff)
+
+
+class UserProfileApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="alumna@example.com",
+            password="Clave-segura-123",
+            first_name="Ana",
+            last_name="Ejemplo",
+        )
+        self.profile_url = reverse("usuarios:current-user")
+
+    def test_anonymous_user_cannot_access_profile(self):
+        response = self.client.get(self.profile_url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_authenticated_user_can_read_own_profile(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.profile_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.json(),
+            {
+                "id": self.user.pk,
+                "email": "alumna@example.com",
+                "first_name": "Ana",
+                "last_name": "Ejemplo",
+                "role": User.Role.ALUMNO,
+            },
+        )
+        self.assertNotIn("password", response.json())
+        self.assertNotIn("is_staff", response.json())
+        self.assertNotIn("is_superuser", response.json())
+
+    def test_profile_is_read_only(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.profile_url, {"role": User.Role.ADMIN})
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.role, User.Role.ALUMNO)
+
+    def test_browsable_api_login_route_is_available(self):
+        response = self.client.get(reverse("rest_framework:login"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
