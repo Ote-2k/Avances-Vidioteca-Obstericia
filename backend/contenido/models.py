@@ -35,3 +35,27 @@ class Asignatura(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Unidad(models.Model):
+    """Sección ordenadora de los contenidos educativos de una asignatura."""
+
+    asignatura = models.ForeignKey(
+        Asignatura,
+        on_delete=models.CASCADE,
+        db_column="assignment_id",
+        related_name="unidades",
+        verbose_name="asignatura",
+    )
+    name = models.CharField("nombre", max_length=200)
+    created_at = models.DateTimeField("fecha de creación", auto_now_add=True)
+    updated_at = models.DateTimeField("última actualización", auto_now=True)
+
+    class Meta:
+        db_table = "contenido_unit"
+        ordering = ("name",)
+        verbose_name = "unidad"
+        verbose_name_plural = "unidades"
+
+    def __str__(self):
+        return f"{self.asignatura}: {self.name}"

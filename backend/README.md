@@ -89,3 +89,13 @@ rol `admin` puede gestionar todas. Los alumnos solo ven asignaturas publicadas
 en las que están inscritos. La API ofrece el CRUD en
 `/api/asignaturas/` y la interfaz navegable de DRF permite probarlo tras iniciar
 sesión.
+
+## Unidades
+
+Las unidades pertenecen a una asignatura y se administran desde rutas anidadas:
+`/api/asignaturas/{id}/unidades/` lista o crea unidades y
+`/api/asignaturas/{id}/unidades/{unidad_id}/` consulta, edita o elimina una.
+Profesores y profesores de área solo pueden gestionar unidades de sus
+asignaturas. Los alumnos inscritos pueden consultarlas cuando la asignatura
+está publicada. La asignatura asociada se toma de la ruta para impedir mover una
+unidad a otra asignatura modificando la solicitud.

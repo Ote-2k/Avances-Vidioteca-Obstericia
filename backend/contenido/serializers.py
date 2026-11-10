@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from usuarios.models import User
 
-from .models import Asignatura
+from .models import Asignatura, Unidad
 
 
 class AsignaturaSerializer(serializers.ModelSerializer):
@@ -30,3 +30,12 @@ class AsignaturaSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "owner", "created_at", "updated_at")
+
+
+class UnidadSerializer(serializers.ModelSerializer):
+    """Representa una unidad; la asignatura se fija desde la ruta anidada."""
+
+    class Meta:
+        model = Unidad
+        fields = ("id", "asignatura", "name", "created_at", "updated_at")
+        read_only_fields = ("id", "asignatura", "created_at", "updated_at")
