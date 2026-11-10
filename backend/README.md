@@ -64,10 +64,16 @@ python manage.py createsuperuser
 ```
 
 Inicia el servidor y abre `http://127.0.0.1:8000/api-auth/login/` para iniciar
-sesión. Luego visita `http://127.0.0.1:8000/api/usuarios/me/` para ver el perfil
-de la cuenta autenticada. Las solicitudes anónimas no pueden consultar ese
-endpoint. La respuesta incluye el correo, nombre, apellido y rol; no expone la
-contraseña ni los permisos internos de Django.
+sesión; el acceso directo redirige a la raíz navegable `/api/`. Luego visita
+`http://127.0.0.1:8000/api/usuarios/me/` para ver el perfil de la cuenta
+autenticada. Las solicitudes anónimas no pueden consultar ese endpoint. La
+respuesta incluye el correo, nombre, apellido y rol; no expone la contraseña ni
+los permisos internos de Django.
+
+El API Root también ofrece `/api/usuarios/`, un listado paginado y de solo
+lectura accesible únicamente para cuentas con el rol de aplicación `admin`.
+Devuelve solo ID, correo, nombre, apellido y rol; no permite consultar cuentas
+individuales por esta ruta ni expone contraseñas o permisos internos.
 
 ## Permisos por rol
 

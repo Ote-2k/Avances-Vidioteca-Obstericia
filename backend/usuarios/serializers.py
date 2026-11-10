@@ -12,3 +12,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "email", "first_name", "last_name", "role")
         read_only_fields = fields
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    """Expone solo los datos básicos de una cuenta en el listado administrativo."""
+
+    class Meta:
+        model = User
+        fields = ("id", "email", "first_name", "last_name", "role")
+        read_only_fields = fields
