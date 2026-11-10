@@ -48,3 +48,14 @@ class RecursoSerializer(serializers.ModelSerializer):
             'comments'
         ]
         read_only_fields = ['creador', 'created_at']
+    
+    #funcion hecha para validar el tiempo de reproduccion del video, hecha en caso de q no funcione correctamente la version actual del frontend al momento de conectarla al backend, espero, nose realmente si funcionara hasta q los conecte
+    def validate(self, data):
+        trim_start = data.get('trim_start', getattr(self.instance, 'trim_start', 0.0))
+        trim_end = data.get('trim_end', getattr(self.instance, 'trim_end', None))
+
+        if trim_end is not None and trim_end <= trim_start:
+            raise serializers.ValidationError({
+                "trim_end": "El punto final del video no puede estar antes que el punto inicial del video"
+            })
+        return data
