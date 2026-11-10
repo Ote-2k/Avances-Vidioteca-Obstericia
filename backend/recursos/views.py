@@ -1,6 +1,7 @@
 """Vistas de la API para recursos, documentos y comentarios."""
 
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.serializers import ListSerializer
 
 from usuarios.models import User
 
@@ -62,7 +63,10 @@ class DocumentoViewSet(ModelViewSet):
 
     def get_serializer(self, *args, **kwargs):
         serializer = super().get_serializer(*args, **kwargs)
-        serializer.fields["recurso"].queryset = visible_resources_for(
+        fields_serializer = (
+            serializer.child if isinstance(serializer, ListSerializer) else serializer
+        )
+        fields_serializer.fields["recurso"].queryset = visible_resources_for(
             self.request.user,
         )
         return serializer
@@ -87,10 +91,13 @@ class ComentarioViewSet(ModelViewSet):
 
     def get_serializer(self, *args, **kwargs):
         serializer = super().get_serializer(*args, **kwargs)
-        serializer.fields["recurso"].queryset = visible_resources_for(
+        fields_serializer = (
+            serializer.child if isinstance(serializer, ListSerializer) else serializer
+        )
+        fields_serializer.fields["recurso"].queryset = visible_resources_for(
             self.request.user,
         )
-        serializer.fields["respuesta_a"].queryset = Comentario.objects.filter(
+        fields_serializer.fields["respuesta_a"].queryset = Comentario.objects.filter(
             recurso__in=visible_resources_for(self.request.user),
         )
         return serializer

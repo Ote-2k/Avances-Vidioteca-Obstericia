@@ -39,7 +39,7 @@ class AsignaturaApiTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_professor_can_create_assignment_owned_by_self(self):
+    def test_professor_cannot_create_assignment(self):
         self.client.force_authenticate(self.teacher)
 
         response = self.client.post(
@@ -52,10 +52,8 @@ class AsignaturaApiTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        assignment = Asignatura.objects.get(title="Salud materna")
-        self.assertEqual(assignment.owner, self.teacher)
-        self.assertEqual(response.data["owner"], self.teacher.pk)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Asignatura.objects.filter(title="Salud materna").exists())
 
     def test_professor_cannot_enroll_another_professor(self):
         self.client.force_authenticate(self.teacher)
@@ -66,10 +64,10 @@ class AsignaturaApiTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(self.assignment.enrolled_students.exists())
 
-    def test_professor_can_edit_own_assignment(self):
+    def test_professor_cannot_edit_own_assignment(self):
         self.client.force_authenticate(self.teacher)
 
         response = self.client.patch(
@@ -78,9 +76,17 @@ class AsignaturaApiTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assignment.refresh_from_db()
-        self.assertEqual(self.assignment.title, "Obstetricia clínica")
+        self.assertEqual(self.assignment.title, "Obstetricia")
+
+    def test_professor_can_read_own_assignment(self):
+        self.client.force_authenticate(self.teacher)
+
+        response = self.client.get(self.detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.assignment.pk)
 
     def test_professor_cannot_read_or_edit_another_professors_assignment(self):
         self.client.force_authenticate(self.other_teacher)
@@ -244,18 +250,22 @@ class AsignaturaApiTests(TestCase):
 
     def test_professor_area_can_manage_owned_assignment(self):
         self.client.force_authenticate(self.other_teacher)
-        assignment = Asignatura.objects.create(
-            title="Área de salud",
-            owner=self.other_teacher,
-        )
 
-        response = self.client.patch(
+        create_response = self.client.post(
+            self.list_url,
+            {"title": "Área de salud"},
+            format="json",
+        )
+        assignment = Asignatura.objects.get(title="Área de salud")
+        update_response = self.client.patch(
             reverse("asignatura-detail", args=(assignment.pk,)),
             {"title": "Área de salud actualizada"},
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(assignment.owner, self.other_teacher)
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
         assignment.refresh_from_db()
         self.assertEqual(assignment.title, "Área de salud actualizada")
 
@@ -278,13 +288,13 @@ class AsignaturaApiTests(TestCase):
         self.assertEqual(len(list_response.data["results"]), 1)
         self.assertEqual(update_response.status_code, status.HTTP_200_OK)
 
-    def test_professor_can_delete_own_assignment(self):
+    def test_professor_cannot_delete_own_assignment(self):
         self.client.force_authenticate(self.teacher)
 
         response = self.client.delete(self.detail_url)
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Asignatura.objects.filter(pk=self.assignment.pk).exists())
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Asignatura.objects.filter(pk=self.assignment.pk).exists())
 
 
 class UnidadApiTests(TestCase):

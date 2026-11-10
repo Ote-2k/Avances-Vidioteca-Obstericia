@@ -6,7 +6,7 @@ from usuarios.models import User
 
 
 class CanManageOwnedAssignment(BasePermission):
-    """Permite escribir a profesores sobre su contenido y a los administradores."""
+    """Permite gestionar asignaturas a profesores de área y administradores."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -14,7 +14,6 @@ class CanManageOwnedAssignment(BasePermission):
             return False
 
         return request.method in SAFE_METHODS or user.role in (
-            User.Role.PROFESOR,
             User.Role.PROFESOR_AREA,
             User.Role.ADMIN,
         )
@@ -23,7 +22,13 @@ class CanManageOwnedAssignment(BasePermission):
         if request.method in SAFE_METHODS:
             return True
 
-        return request.user.role == User.Role.ADMIN or obj.owner_id == request.user.pk
+        return (
+            request.user.role == User.Role.ADMIN
+            or (
+                request.user.role == User.Role.PROFESOR_AREA
+                and obj.owner_id == request.user.pk
+            )
+        )
 
 
 class CanManageOwnedUnit(BasePermission):

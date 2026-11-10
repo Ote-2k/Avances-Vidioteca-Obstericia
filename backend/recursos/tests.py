@@ -252,6 +252,32 @@ class RecursoApiTests(TestCase):
         self.assertEqual(create_response.data["autor"], self.student.pk)
         self.assertEqual(edit_response.status_code, 403)
 
+    def test_student_can_list_comments_for_accessible_resources(self):
+        comment = Comentario.objects.create(
+            recurso=self.resource,
+            autor=self.professor,
+            text="Comentario visible",
+        )
+        self.client.force_authenticate(self.student)
+
+        response = self.client.get(reverse("comentario-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.data], [comment.pk])
+
+    def test_student_can_list_documents_for_accessible_resources(self):
+        document = Documento.objects.create(
+            recurso=self.resource,
+            title="Apuntes",
+            url="https://example.com/apuntes",
+        )
+        self.client.force_authenticate(self.student)
+
+        response = self.client.get(reverse("documento-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.data], [document.pk])
+
     def test_comment_reply_must_belong_to_same_resource(self):
         original = Comentario.objects.create(
             recurso=self.resource,
@@ -292,3 +318,20 @@ class RecursoApiTests(TestCase):
 
                 self.assertEqual(response.status_code, 201)
                 self.assertIn("documentos/", response.data["archivo"])
+
+
+class RecursoAdminTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            email="superadmin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(self.admin_user)
+
+    def test_resource_models_are_available_in_django_admin(self):
+        for model_name in ("recurso", "documento", "comentario"):
+            with self.subTest(model=model_name):
+                response = self.client.get(
+                    reverse(f"admin:recursos_{model_name}_changelist")
+                )
+                self.assertEqual(response.status_code, 200)

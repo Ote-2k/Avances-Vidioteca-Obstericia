@@ -89,9 +89,11 @@ para modificar asignaturas ni unidades.
 
 Las asignaturas tienen un profesor propietario, título, descripción, URL
 opcional de portada, estado de publicación y una lista de alumnos inscritos.
-Profesores y profesores de área pueden gestionar sus propias asignaturas; el
-rol `admin` puede gestionar todas. Los alumnos solo ven asignaturas publicadas
-en las que están inscritos. La API ofrece el CRUD en
+Los profesores de área pueden crear y gestionar sus propias asignaturas; el
+rol `admin` puede gestionar todas. Los profesores pueden consultar las
+asignaturas que tienen asignadas, pero no crearlas, editarlas ni eliminarlas.
+Los alumnos solo ven asignaturas publicadas en las que están inscritos. La API
+ofrece el CRUD en
 `/api/asignaturas/` y la interfaz navegable de DRF permite probarlo tras iniciar
 sesión. El listado permite buscar por título o descripción con `?search=texto`,
 filtrar el estado con `?published=true` o `?published=false`, ordenar por título
