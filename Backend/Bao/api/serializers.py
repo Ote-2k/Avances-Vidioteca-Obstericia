@@ -36,7 +36,8 @@ class RecursoSerializer(serializers.ModelSerializer):
             'id', 
             'title', 
             'description', 
-            'video_url', 
+            'video_url',
+            'video_file',
             'trim_start', 
             'trim_end', 
             'is_hidden', 
@@ -49,6 +50,24 @@ class RecursoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['creador', 'created_at']
     
+    # 1. Validacion especifica del campo video_url
+    def validate_video_url(self, value):
+        if not value:
+            return value
+            
+        dominios_permitidos = ['youtube.com', 'youtu.be', 'drive.google.com', 'vimeo.com']
+        extensiones_directas = ('.mp4', '.webm', '.ogg')
+        
+        url_lower = value.lower()
+        es_dominio_valido = any(dominio in url_lower for dominio in dominios_permitidos)
+        es_archivo_directo = url_lower.endswith(extensiones_directas)
+
+        if not (es_dominio_valido or es_archivo_directo):
+            raise serializers.ValidationError(
+                "La URL debe ser de YouTube, Google Drive, Vimeo o un enlace directo (.mp4, .webm)."
+            )
+        return value
+    
     #funcion hecha para validar el tiempo de reproduccion del video, hecha en caso de q no funcione correctamente la version actual del frontend al momento de conectarla al backend, espero, nose realmente si funcionara hasta q los conecte
     def validate(self, data):
         trim_start = data.get('trim_start', getattr(self.instance, 'trim_start', 0.0))
@@ -58,4 +77,16 @@ class RecursoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "trim_end": "El punto final del video no puede estar antes que el punto inicial del video"
             })
+        
+        # esto es para verificar que exista al menos una fuente de video si no es borrador
+        is_draft = data.get('is_draft', getattr(self.instance, 'is_draft', True))
+        video_url = data.get('video_url', getattr(self.instance, 'video_url', None))
+        video_file = data.get('video_file', getattr(self.instance, 'video_file', None))
+
+        if not is_draft and not video_url and not video_file:
+            raise serializers.ValidationError(
+                "Para publicar un recurso se debe dar una URL de video o subir un archivo."
+            )
+        
         return data
+        
