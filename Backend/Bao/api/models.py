@@ -8,6 +8,7 @@ class Recurso(models.Model):
     title = models.CharField(max_length=200, verbose_name="Titulo")
     description = models.TextField(blank=True, null=True, verbose_name="Descripcion")
     video_url = models.URLField(blank=True, null=True, verbose_name="URL del Video")
+    video_file = models.FileField(upload_to='videos/', blank=True, null=True, verbose_name="Archivo de Video")
     trim_start = models.FloatField(default=0.0, verbose_name="Inicio de reproduccion")
     trim_end = models.FloatField(blank=True, null=True, verbose_name="Fin de reproducción (seg)")
     is_hidden = models.BooleanField(default=False, verbose_name="Oculto a estudiantes")
@@ -22,7 +23,6 @@ class Recurso(models.Model):
 
     def __str__(self):
         return self.title
-
 
 class Documento(models.Model):
     """
